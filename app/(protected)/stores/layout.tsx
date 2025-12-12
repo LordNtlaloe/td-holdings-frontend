@@ -1,14 +1,6 @@
-import Heading from '@/components/general/heading';
-import { type PropsWithChildren } from 'react';
+import Heading from "@/components/general/heading";
 
-
-export default function BranchesLayout({ children }: PropsWithChildren) {
-
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-
+export default function StoresLayout({ children,}: Readonly<{ children: React.ReactNode; }>) {
     return (
         <div className="px-4 py-6 w-full max-w-full">
             <Heading title="Branches" description="Manage Your Branches" />

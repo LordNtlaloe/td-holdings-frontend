@@ -1,3 +1,5 @@
+import AppLayout from "@/layouts/app-layout";
+
 // import AuthSplitLayout from "@/layouts/auth/auth-split-layout";
 export default function RootLayout({
     children,
@@ -6,9 +8,9 @@ export default function RootLayout({
 }) {
     return (
         // <AuthSplitLayout>
-        <div>
+        <AppLayout>
             {children}
-        </div>
+        </AppLayout>
         // </AuthSplitLayout>
     )
 }

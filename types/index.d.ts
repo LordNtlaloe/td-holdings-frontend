@@ -81,3 +81,87 @@ export interface FullUser extends BasicUser {
         isActive: boolean;
     };
 }
+
+// types/store.ts
+export interface Store {
+    id: string;
+    name: string;
+    location: string;
+    createdAt: Date;
+    updatedAt: Date;
+    employeeCount?: number;
+    productCount?: number;
+    saleCount?: number;
+    _count?: {
+        employees: number;
+        products: number;
+        sales: number;
+    };
+}
+
+export interface StoreStats {
+    stats: {
+        employeeCount: number;
+        productCount: number;
+        saleCount: number;
+    };
+    salesSummary: {
+        totalRevenue: number;
+        totalSales: number;
+        averageSale: number;
+    };
+    recentSales: any[];
+    topProducts: any[];
+    lowStock: any[];
+}
+
+export interface StoreEmployee {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    position: string;
+    storeId: string;
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    user?: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+        emailVerified: Date | null;
+        createdAt: Date;
+    };
+    _count?: {
+        sales: number;
+    };
+}
+
+export interface CreateStoreRequest {
+    name: string;
+    location: string;
+}
+
+export interface UpdateStoreRequest {
+    name?: string;
+    location?: string;
+}
+
+export interface AddEmployeeRequest {
+    userId: string;
+    position?: string;
+}
+
+export interface StoreFilters {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+export type StoreFormData = {
+    name: string;
+    location: string;
+};

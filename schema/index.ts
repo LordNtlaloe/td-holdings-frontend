@@ -26,3 +26,10 @@ export const SignUpSchema = z.object({
     }),
     role: z.enum(['ADMIN', 'MANAGER', 'CASHIER']),
 });
+
+export const StoreSchema = z.object({
+  name: z.string().min(1, "Store name is required").max(100, "Store name is too long"),
+  location: z.string().min(1, "Location is required").max(200, "Location is too long"),
+});
+
+export type StoreFormValues = z.infer<typeof StoreSchema>;
