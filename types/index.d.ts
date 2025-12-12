@@ -84,6 +84,8 @@ export interface FullUser extends BasicUser {
 
 // types/store.ts
 export interface Store {
+    isActive: any;
+    isActive: any;
     id: string;
     name: string;
     location: string;
@@ -165,3 +167,126 @@ export type StoreFormData = {
     name: string;
     location: string;
 };
+
+// app/lib/types/products.ts
+export interface Product {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    type: 'TIRE' | 'BALE';
+    grade: 'A' | 'B' | 'C';
+    commodity: string;
+    storeId: string;
+    store?: {
+        id: string;
+        name: string;
+        location: string;
+    };
+
+    // Tire fields
+    tireCategory?: string | null;
+    tireUsage?: string | null;
+    tireSize?: string | null;
+    loadIndex?: string | null;
+    speedRating?: string | null;
+    warrantyPeriod?: string | null;
+
+    // Bale fields
+    baleWeight?: number | null;
+    baleCategory?: string | null;
+    originCountry?: string | null;
+    importDate?: Date | null;
+    baleCount?: number | null;
+
+    // Timestamps
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface ProductMetrics {
+    totalProducts: number;
+    totalValue: number;
+    totalQuantity: number;
+    byType: {
+        tire: number;
+        bale: number;
+    };
+    valueByType: {
+        tire: number;
+        bale: number;
+    };
+    stockStatus: {
+        outOfStock: number;
+        lowStock: number;
+        inStock: number;
+    };
+    tireCategories: Record<string, number>;
+    grades: Record<string, number>;
+    topProductsByValue: Array<{
+        id: string;
+        name: string;
+        type: string;
+        quantity: number;
+        price: number;
+        totalValue: number;
+        store: string;
+    }>;
+    recentAdditions: number;
+    recentValueAdded: number;
+    byStore: Record<string, { count: number; value: number; quantity: number }>;
+    priceRanges: {
+        under100: number;
+        '100-500': number;
+        '501-1000': number;
+        over1000: number;
+    };
+    quantityRanges: {
+        '1-10': number;
+        '11-50': number;
+        '51-100': number;
+        over100: number;
+    };
+    topCommodities: Record<string, { count: number; value: number; products: string[] }>;
+    alerts: {
+        zeroStockProducts: number;
+        lowStockProducts: number;
+        highValueProducts: number;
+    };
+}
+
+export interface ProductFilters {
+    storeId?: string;
+    type?: 'TIRE' | 'BALE';
+    category?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+export interface ProductFormData {
+    name: string;
+    price: number;
+    quantity: number;
+    type: 'TIRE' | 'BALE';
+    grade: 'A' | 'B' | 'C';
+    commodity: string;
+    storeId?: string;
+
+    // Optional tire fields
+    tireCategory?: string;
+    tireUsage?: string;
+    tireSize?: string;
+    loadIndex?: string;
+    speedRating?: string;
+    warrantyPeriod?: string;
+
+    // Optional bale fields
+    baleWeight?: number;
+    baleCategory?: string;
+    originCountry?: string;
+    importDate?: Date;
+    baleCount?: number;
+}
