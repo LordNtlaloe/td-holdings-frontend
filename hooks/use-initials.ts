@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 
 export function useInitials() {
-    return useCallback((user?: { first_name?: string; last_name?: string }): string => {
+    return useCallback((user?: { firstName?: string; lastName?: string }): string => {
         if (!user) return '';
 
-        const firstName = user.first_name?.trim() || '';
-        const lastName = user.last_name?.trim() || '';
+        const firstName = user.lastName?.trim() || '';
+        const lastName = user.lastName?.trim() || '';
 
         if (!firstName && !lastName) return '';
 

@@ -7,7 +7,7 @@ type AppLogoIconProps = {
     height?: number;
 };
 
-export default function AppLogoIcon({ className, width = 100, height = 100 }: AppLogoIconProps) {
+export default function AppLogoIcon({ className, width = 1000, height = 1000 }: AppLogoIconProps) {
     return (
         <Image
             src="/Images/TD-Logo.png"

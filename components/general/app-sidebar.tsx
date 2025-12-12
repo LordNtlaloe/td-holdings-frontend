@@ -2,7 +2,7 @@
 import { NavMain } from '@/components/general/nav-main';
 import { NavUser } from '@/components/general/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/lib/types';
+import { type NavItem } from '@/types';
 import Link from 'next/link';
 import { LayoutGrid, MapPinIcon, Package, Monitor, User, Users, Receipt } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -48,19 +48,18 @@ const mainNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const  auth  = useCurrentRole()
+    const auth = useCurrentRole()
 
-    const userRole = auth;
-    
     const filteredNavItems = mainNavItems.filter((item) => {
-        if (userRole === 'Cashier') {
+        // Access the role property from the auth object
+        if (auth.role === 'ADMIN') {
             return true; // Show all items for admin
-        } else if (userRole === 'Manager') {
+        } else if (auth.role === 'MANAGER') {
             return !['Users'].includes(item.title); // Hide "Users" for manager
-        } else if (userRole === 'Admin') {
+        } else if (auth.role === 'CASHIER') {
             return !['Users', 'Employees', 'Branches'].includes(item.title); // Hide these for cashier
         }
-        return false; // Default: hide all (or adjust as needed)
+        return false; // Default: hide all if no role
     });
 
     return (

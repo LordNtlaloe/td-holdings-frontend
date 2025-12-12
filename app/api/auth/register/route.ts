@@ -1,22 +1,27 @@
 // app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardRequest, getTokenFromRequest } from '@/lib/api-client';
+import { forwardRequest } from '@/lib/api-client';
 
 export async function POST(request: NextRequest) {
     try {
-        // Check if user is authenticated (admin only)
-        const token = getTokenFromRequest(request);
-        if (!token) {
-            return NextResponse.json(
-                { error: 'Authentication required', code: 'NO_TOKEN' },
-                { status: 401 }
-            );
-        }
+        console.log('Register API route called');
+
+        // Get the request body
+        const body = await request.json();
+        console.log('Request body:', body);
 
         // Forward to your Express backend
-        const response = await forwardRequest('/api/auth/register', 'POST', request);
+        const response = await forwardRequest('/api/auth/register', 'POST', request, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        console.log('Backend response status:', response.status);
 
         const data = await response.json();
+        console.log('Backend response data:', data);
 
         return NextResponse.json(data, {
             status: response.status,
@@ -27,7 +32,11 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Register route error:', error);
         return NextResponse.json(
-            { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+            {
+                error: 'Internal server error',
+                code: 'INTERNAL_ERROR',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500 }
         );
     }

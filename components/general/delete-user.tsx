@@ -1,3 +1,4 @@
+// components/DeleteUser.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -7,10 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import HeadingSmall from '@/components/general/heading-small';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { deleteUser } from '@/actions/user.actions';
+import { useAuth } from '@/context/AuthContext';
 
-export default function DeleteUser({ userId }: { userId: string }) {
+interface DeleteUserProps {
+    userId: string;
+    onSuccess?: () => void;
+    onCancel?: () => void;
+}
+
+export default function DeleteUser({ userId, onSuccess, onCancel }: DeleteUserProps) {
     const router = useRouter();
+    const { logout, user } = useAuth();
     const passwordInput = useRef<HTMLInputElement>(null);
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -23,16 +31,36 @@ export default function DeleteUser({ userId }: { userId: string }) {
         setError(null);
 
         try {
-            const result = await deleteUser(userId);
+            // Direct API call
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+                },
+                body: JSON.stringify({ password })
+            });
 
-            if (result?.error) {
-                throw new Error(result.error);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || data.message || 'Failed to delete account');
             }
 
             // Account deleted successfully
             closeModal();
-            // Redirect to home or login page after deletion
-            router.push('/');
+            
+            // Call success callback if provided
+            if (onSuccess) {
+                onSuccess();
+            }
+            
+            // If deleting current user, logout and redirect
+            if (user?.id === userId) {
+                await logout();
+                router.push('/');
+            }
+            
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred');
             passwordInput.current?.focus();
@@ -45,6 +73,11 @@ export default function DeleteUser({ userId }: { userId: string }) {
         setError(null);
         setPassword('');
         setIsDialogOpen(false);
+        
+        // Call cancel callback if provided
+        if (onCancel) {
+            onCancel();
+        }
     };
 
     return (
@@ -87,6 +120,7 @@ export default function DeleteUser({ userId }: { userId: string }) {
                                     placeholder="Password"
                                     autoComplete="current-password"
                                     required
+                                    disabled={isProcessing}
                                 />
 
                                 {error && (
@@ -102,6 +136,7 @@ export default function DeleteUser({ userId }: { userId: string }) {
                                         variant="secondary" 
                                         type="button"
                                         onClick={closeModal}
+                                        disabled={isProcessing}
                                     >
                                         Cancel
                                     </Button>
@@ -110,7 +145,7 @@ export default function DeleteUser({ userId }: { userId: string }) {
                                 <Button 
                                     variant="destructive" 
                                     type="submit"
-                                    disabled={isProcessing}
+                                    disabled={isProcessing || !password}
                                 >
                                     {isProcessing ? 'Deleting...' : 'Delete account'}
                                 </Button>

@@ -2,8 +2,9 @@
 import React from 'react'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import AuthHeader from './auth-header'
-import Socials from '@/components/auth/socials'
-import BackButton from '../auth/back-button'
+import { Button } from '../ui/button'
+// import Socials from '@/components/auth/socials'
+// import BackButton from '../auth/back-button'
 
 interface CardWrapperProps {
     children: React.ReactNode,
@@ -22,11 +23,11 @@ export default function CardWrapper({ children, headerLabel, backButtonLabel, ba
             <CardContent>{children}</CardContent>
             {showSocial && (
                 <CardFooter>
-                    <Socials />
+                    {/* <Socials /> */}
                 </CardFooter>
             )}
             <CardFooter>
-                <BackButton label={backButtonLabel} link={backButtonHref}/>
+                <Button>Back</Button>
             </CardFooter>
         </Card>
     )

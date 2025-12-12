@@ -1,73 +1,97 @@
 // utils/storage.ts
-import { User } from '@/types/auth';
 
-const ACCESS_TOKEN_KEY = 'accessToken';
-const REFRESH_TOKEN_KEY = 'refreshToken';
-const USER_KEY = 'user';
+export interface User {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    phoneNumber?: string;
+    emailVerified?: Date | null;
+    store?: {
+        id: string;
+        name: string;
+        address?: string;
+        phone?: string;
+    };
+    employee?: {
+        id: string;
+        position: string;
+    };
+}
 
-// Check if we're in browser environment
-const isBrowser = typeof window !== 'undefined';
-
+// Storage utility functions
 export const storage = {
-    // Token management
     getAccessToken: (): string | null => {
-        if (!isBrowser) return null;
-        return localStorage.getItem(ACCESS_TOKEN_KEY);
-    },
-
-    setAccessToken: (token: string): void => {
-        if (!isBrowser) return;
-        localStorage.setItem(ACCESS_TOKEN_KEY, token);
-    },
-
-    removeAccessToken: (): void => {
-        if (!isBrowser) return;
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('accessToken');
+        }
+        return null;
     },
 
     getRefreshToken: (): string | null => {
-        if (!isBrowser) return null;
-        return localStorage.getItem(REFRESH_TOKEN_KEY);
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('refreshToken');
+        }
+        return null;
+    },
+
+    getUser: (): User | null => {
+        if (typeof window !== 'undefined') {
+            const user = localStorage.getItem('user');
+            try {
+                return user ? JSON.parse(user) : null;
+            } catch (error) {
+                console.error('Failed to parse user from storage:', error);
+                return null;
+            }
+        }
+        return null;
+    },
+
+    setAccessToken: (token: string): void => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('accessToken', token);
+        }
     },
 
     setRefreshToken: (token: string): void => {
-        if (!isBrowser) return;
-        localStorage.setItem(REFRESH_TOKEN_KEY, token);
-    },
-
-    removeRefreshToken: (): void => {
-        if (!isBrowser) return;
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-    },
-
-    // User management
-    getUser: (): User | null => {
-        if (!isBrowser) return null;
-        const userStr = localStorage.getItem(USER_KEY);
-        return userStr ? JSON.parse(userStr) : null;
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('refreshToken', token);
+        }
     },
 
     setUser: (user: User): void => {
-        if (!isBrowser) return;
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(user));
+        }
     },
 
-    removeUser: (): void => {
-        if (!isBrowser) return;
-        localStorage.removeItem(USER_KEY);
-    },
-
-    // Clear all auth data
     clearAll: (): void => {
-        if (!isBrowser) return;
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+        }
     },
 
-    // Check if user data exists
-    hasAuthData: (): boolean => {
-        if (!isBrowser) return false;
-        return !!localStorage.getItem(ACCESS_TOKEN_KEY) && !!localStorage.getItem(USER_KEY);
+    // Additional utility methods
+    clear: (key: string): void => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(key);
+        }
+    },
+
+    get: (key: string): string | null => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem(key);
+        }
+        return null;
+    },
+
+    set: (key: string, value: string): void => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(key, value);
+        }
     }
 };

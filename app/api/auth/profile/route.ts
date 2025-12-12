@@ -1,33 +1,52 @@
-// app/api/auth/profile/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardRequest, getTokenFromRequest } from '@/lib/api-client';
+import { cookies } from 'next/headers';
+
+const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:4000/api';
 
 export async function GET(request: NextRequest) {
     try {
-        // Check authentication
-        const token = getTokenFromRequest(request);
-        if (!token) {
+        console.log('Frontend API: Getting profile');
+
+        // Get cookies from the request
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get('accessToken');
+
+        console.log('Access token found:', !!accessToken);
+
+        if (!accessToken) {
+            console.log('No access token in cookies');
             return NextResponse.json(
-                { error: 'Authentication required', code: 'NO_TOKEN' },
+                { error: 'Unauthorized - No token' },
                 { status: 401 }
             );
         }
 
-        // Forward to your Express backend
-        const response = await forwardRequest('/api/auth/profile', 'GET', request);
+        // Forward request to backend with cookie
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cookie': `accessToken=${accessToken.value}`,
+            },
+            credentials: 'include',
+        });
+
+        console.log('Backend profile response status:', response.status);
 
         const data = await response.json();
 
-        return NextResponse.json(data, {
-            status: response.status,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        if (!response.ok) {
+            console.log('Profile fetch failed:', data.error);
+            return NextResponse.json(data, { status: response.status });
+        }
+
+        console.log('Profile retrieved successfully for:', data.email);
+        return NextResponse.json(data);
+
     } catch (error) {
-        console.error('Get profile route error:', error);
+        console.error('Profile API error:', error);
         return NextResponse.json(
-            { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+            { error: 'Internal server error' },
             { status: 500 }
         );
     }
@@ -35,30 +54,39 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        // Check authentication
-        const token = getTokenFromRequest(request);
-        if (!token) {
+        const body = await request.json();
+        const cookieStore = cookies();
+        const accessToken = (await cookieStore).get('accessToken');
+
+        if (!accessToken) {
             return NextResponse.json(
-                { error: 'Authentication required', code: 'NO_TOKEN' },
+                { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        // Forward to your Express backend
-        const response = await forwardRequest('/api/auth/profile', 'PUT', request);
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cookie': `accessToken=${accessToken.value}`,
+            },
+            body: JSON.stringify(body),
+            credentials: 'include',
+        });
 
         const data = await response.json();
 
-        return NextResponse.json(data, {
-            status: response.status,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        if (!response.ok) {
+            return NextResponse.json(data, { status: response.status });
+        }
+
+        return NextResponse.json(data);
+
     } catch (error) {
-        console.error('Update profile route error:', error);
+        console.error('Update profile API error:', error);
         return NextResponse.json(
-            { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+            { error: 'Internal server error' },
             { status: 500 }
         );
     }

@@ -1,41 +1,47 @@
-// providers/AuthProvider.tsx
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, AuthState } from '@/types/auth';
-import { api } from '@/lib/api';
-import { storage } from '@/utils/storage';
 
-interface AuthContextType extends AuthState {
-    login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-    register: (userData: any) => Promise<{ success: boolean; error?: string }>;
-    logout: () => Promise<void>;
-    updateProfile: (profileData: any) => Promise<{ success: boolean; error?: string }>;
-    verifyEmail: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
-    forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
-    resetPassword: (email: string, token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
-    refreshUser: () => Promise<void>;
-    hasRole: (roles: string | string[]) => boolean;
+export type UserRole = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'INVENTORY_MANAGER';
+
+export interface User {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    phoneNumber?: string;
+    emailVerified?: Date | null;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export interface AuthState {
+    user: User | null;
+    isLoading: boolean;
+    isAuthenticated: boolean;
+}
+
+interface AuthContextType extends AuthState {
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
+    register: (userData: any) => Promise<void>;
+    updateProfile: (profileData: any) => Promise<void>;
+    verifyEmail: (email: string, code: string) => Promise<void>;
+    forgotPassword: (email: string) => Promise<void>;
+    resetPassword: (email: string, token: string, newPassword: string) => Promise<void>;
+    hasRole: (roles: UserRole | UserRole[]) => boolean;
+    hasRoutePermission: (path: string) => boolean;
+    checkAuth: () => Promise<boolean>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-// Public routes that don't require authentication
-const publicRoutes = [
-    '/login',
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/verify-email',
-];
-
 export function AuthProvider({ children }: AuthProviderProps) {
-    const [state, setState] = useState<AuthState>({
+    const [authState, setAuthState] = useState<AuthState>({
         user: null,
         isLoading: true,
         isAuthenticated: false,
@@ -44,214 +50,299 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const router = useRouter();
     const pathname = usePathname();
 
-    // Load user from storage and validate token
-    const loadUser = useCallback(async () => {
+    // Check authentication status
+    const checkAuth = useCallback(async (): Promise<boolean> => {
         try {
-            const storedUser = storage.getUser();
-            const token = storage.getAccessToken();
+            console.log('Checking authentication status...');
 
-            if (!token || !storedUser) {
-                setState({
-                    user: null,
-                    isLoading: false,
-                    isAuthenticated: false,
-                });
-                return;
-            }
+            const response = await fetch('/api/auth/profile', {
+                credentials: 'include',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                },
+            });
 
-            // Validate token by fetching profile
-            const result = await api.getProfile();
+            console.log('Profile check response status:', response.status);
 
-            if (result.data) {
-                setState({
-                    user: result.data,
+            if (response.ok) {
+                const user = await response.json();
+                console.log('User authenticated:', user.email);
+
+                setAuthState({
+                    user,
                     isLoading: false,
                     isAuthenticated: true,
                 });
+                return true;
             } else {
-                // Token is invalid, clear storage
-                storage.clearAll();
-                setState({
+                const error = await response.json();
+                console.log('Not authenticated:', error.error);
+
+                setAuthState({
                     user: null,
                     isLoading: false,
                     isAuthenticated: false,
                 });
+                return false;
             }
         } catch (error) {
-            console.error('Failed to load user:', error);
-            storage.clearAll();
-            setState({
+            console.error('Failed to check auth:', error);
+            setAuthState({
                 user: null,
                 isLoading: false,
                 isAuthenticated: false,
             });
+            return false;
         }
     }, []);
 
-    // Initialize auth state
+    // Load initial auth state
     useEffect(() => {
-        loadUser();
-    }, [loadUser]);
+        checkAuth();
+    }, [checkAuth]);
 
-    // Handle route protection
-    useEffect(() => {
-        if (state.isLoading) return;
-
-        const isPublicRoute = publicRoutes.some(route => pathname?.startsWith(route));
-
-        if (!state.isAuthenticated && !isPublicRoute) {
-            // Redirect to login if not authenticated on protected route
-            router.push('/login');
-        } else if (state.isAuthenticated && isPublicRoute) {
-            // Redirect to dashboard if authenticated on public route
-            router.push('/dashboard');
-        }
-    }, [state.isAuthenticated, state.isLoading, pathname, router]);
-
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string): Promise<void> => {
         try {
-            setState(prev => ({ ...prev, isLoading: true }));
+            console.log('Logging in user:', email);
+            setAuthState(prev => ({ ...prev, isLoading: true }));
 
-            const result = await api.login(email, password);
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+                credentials: 'include',
+            });
 
-            if (result.error) {
-                setState(prev => ({ ...prev, isLoading: false }));
-                return { success: false, error: result.error };
+            console.log('Login response status:', response.status);
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Login failed:', error);
+                throw new Error(error.error || 'Login failed');
             }
 
-            await loadUser();
-            return { success: true };
-        } catch (error) {
+            const data = await response.json();
+            console.log('Login successful, received data:', data);
+
+            // The response contains { user: {...} }
+            if (data.user) {
+                console.log('Setting authenticated user:', data.user.email);
+                setAuthState({
+                    user: data.user,
+                    isLoading: false,
+                    isAuthenticated: true,
+                });
+
+                // Small delay to ensure cookies are set
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                console.log('Redirecting to dashboard...');
+                router.push('/dashboard');
+            } else {
+                throw new Error('Invalid response format from server');
+            }
+        } catch (error: any) {
             console.error('Login error:', error);
-            setState(prev => ({ ...prev, isLoading: false }));
-            return { success: false, error: 'Login failed' };
+            setAuthState(prev => ({
+                ...prev,
+                isLoading: false,
+                isAuthenticated: false,
+                user: null
+            }));
+            throw error;
         }
     };
 
-    const register = async (userData: any) => {
+    const logout = async (): Promise<void> => {
         try {
-            setState(prev => ({ ...prev, isLoading: true }));
+            console.log('Logging out...');
+            setAuthState(prev => ({ ...prev, isLoading: true }));
 
-            const result = await api.register(userData);
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include',
+            });
 
-            if (result.error) {
-                setState(prev => ({ ...prev, isLoading: false }));
-                return { success: false, error: result.error };
-            }
-
-            setState(prev => ({ ...prev, isLoading: false }));
-            return { success: true };
-        } catch (error) {
-            console.error('Register error:', error);
-            setState(prev => ({ ...prev, isLoading: false }));
-            return { success: false, error: 'Registration failed' };
-        }
-    };
-
-    const logout = async () => {
-        try {
-            setState(prev => ({ ...prev, isLoading: true }));
-            await api.logout();
+            console.log('Logout successful');
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            storage.clearAll();
-            setState({
+            setAuthState({
                 user: null,
                 isLoading: false,
                 isAuthenticated: false,
             });
-            router.push('/login');
+            router.push('/sign-in');
         }
     };
 
-    const updateProfile = async (profileData: any) => {
+    const register = async (userData: any): Promise<void> => {
         try {
-            setState(prev => ({ ...prev, isLoading: true }));
+            console.log('Registering user:', userData.email);
 
-            const result = await api.updateProfile(profileData);
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData),
+            });
 
-            if (result.error) {
-                setState(prev => ({ ...prev, isLoading: false }));
-                return { success: false, error: result.error };
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Registration failed');
             }
 
-            await loadUser();
-            return { success: true };
-        } catch (error) {
+            console.log('Registration successful');
+
+            if (userData.email) {
+                router.push(`/verify-email?email=${encodeURIComponent(userData.email)}`);
+            }
+        } catch (error: any) {
+            console.error('Register error:', error);
+            throw error;
+        }
+    };
+
+    const updateProfile = async (profileData: any): Promise<void> => {
+        try {
+            console.log('Updating profile...');
+
+            const response = await fetch('/api/auth/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(profileData),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Update failed');
+            }
+
+            const data = await response.json();
+            console.log('Profile updated successfully');
+
+            // Update local state
+            if (data.user) {
+                setAuthState(prev => ({
+                    ...prev,
+                    user: data.user
+                }));
+            } else {
+                // If the response doesn't have user, fetch profile again
+                await checkAuth();
+            }
+        } catch (error: any) {
             console.error('Update profile error:', error);
-            setState(prev => ({ ...prev, isLoading: false }));
-            return { success: false, error: 'Update failed' };
+            throw error;
         }
     };
 
-    const verifyEmail = async (email: string, code: string) => {
+    const verifyEmail = async (email: string, code: string): Promise<void> => {
         try {
-            const result = await api.verifyEmail(email, code);
+            console.log('Verifying email:', email);
 
-            if (result.error) {
-                return { success: false, error: result.error };
+            const response = await fetch('/api/auth/verify-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, code }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Verification failed');
             }
 
-            return { success: true };
-        } catch (error) {
+            console.log('Email verified successfully');
+            await checkAuth();
+        } catch (error: any) {
             console.error('Verify email error:', error);
-            return { success: false, error: 'Verification failed' };
+            throw error;
         }
     };
 
-    const forgotPassword = async (email: string) => {
+    const forgotPassword = async (email: string): Promise<void> => {
         try {
-            const result = await api.forgotPassword(email);
+            console.log('Requesting password reset for:', email);
 
-            if (result.error) {
-                return { success: false, error: result.error };
+            const response = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Request failed');
             }
 
-            return { success: true };
-        } catch (error) {
+            console.log('Password reset email sent');
+        } catch (error: any) {
             console.error('Forgot password error:', error);
-            return { success: false, error: 'Request failed' };
+            throw error;
         }
     };
 
-    const resetPassword = async (email: string, token: string, newPassword: string) => {
+    const resetPassword = async (email: string, token: string, newPassword: string): Promise<void> => {
         try {
-            const result = await api.resetPassword(email, token, newPassword);
+            console.log('Resetting password for:', email);
 
-            if (result.error) {
-                return { success: false, error: result.error };
+            const response = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, token, newPassword }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Reset failed');
             }
 
-            return { success: true };
-        } catch (error) {
+            console.log('Password reset successful');
+        } catch (error: any) {
             console.error('Reset password error:', error);
-            return { success: false, error: 'Reset failed' };
+            throw error;
         }
     };
 
-    const refreshUser = async () => {
-        await loadUser();
+    const hasRole = (roles: UserRole | UserRole[]): boolean => {
+        if (!authState.user) return false;
+        const roleArray = Array.isArray(roles) ? roles : [roles];
+        return roleArray.includes(authState.user.role);
     };
 
-    const hasRole = (roles: string | string[]): boolean => {
-        if (!state.user) return false;
+    const hasRoutePermission = (path: string): boolean => {
+        // Public routes
+        const publicRoutes = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/verify-email'];
+        if (publicRoutes.includes(path)) return true;
 
-        const roleArray = Array.isArray(roles) ? roles : [roles];
-        return roleArray.includes(state.user.role);
+        // Require authentication for all other routes
+        return authState.isAuthenticated;
     };
 
     const value: AuthContextType = {
-        ...state,
+        ...authState,
         login,
-        register,
         logout,
+        register,
         updateProfile,
         verifyEmail,
         forgotPassword,
         resetPassword,
-        refreshUser,
         hasRole,
+        hasRoutePermission,
+        checkAuth,
     };
 
     return (
@@ -259,4 +350,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             {children}
         </AuthContext.Provider>
     );
+}
+
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 }

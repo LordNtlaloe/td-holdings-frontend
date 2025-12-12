@@ -9,12 +9,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { UserMenuContent } from '@/components/general/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import { type BreadcrumbItem, type NavItem, type User } from '@/lib/types';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
+import { NavItem, BreadcrumbItem, User } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
@@ -121,7 +121,7 @@ export function AppHeader({ breadcrumbs = [], user }: AppHeaderProps) {
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" className="size-10 rounded-full p-1">
                                                     <Avatar className="size-8 overflow-hidden rounded-full">
-                                                        <AvatarImage src={user.image} alt={user.first_name} />
+                                                        <AvatarImage src={user?.avatar} alt={user.firstName} />
                                                         <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
                                                             {getInitials(user)}
                                                         </AvatarFallback>

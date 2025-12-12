@@ -1,42 +1,33 @@
 // hooks/useUserRole.ts
 'use client';
 
+import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
 
-export const useUserRole = () => {
+export const useCurrentRole = () => {
+    const { user, isLoading } = useAuth();
     const [role, setRole] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchRole = async () => {
-            try {
-                setIsLoading(true);
-                const result = await api.getProfile();
-                if (result.data?.role) {
-                    setRole(result.data.role);
-                }
-            } catch (error) {
-                console.error('Failed to fetch user role:', error);
-                setRole(null);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchRole();
-    }, []);
+        if (user?.role) {
+            setRole(user.role);
+        } else {
+            setRole(null);
+        }
+    }, [user]);
 
     // Quick role check helpers
-    const isAdmin = role === 'ADMIN';
-    const isManager = role === 'MANAGER';
-    const isCashier = role === 'CASHIER';
+    const ADMIN = role === 'ADMIN';
+    const MANAGER = role === 'MANAGER';
+    const CASHIER = role === 'CASHIER';
+    const INVENTORY_MANAGER = role === 'INVENTORY_MANAGER';
 
     return {
         role,
         isLoading,
-        isAdmin,
-        isManager,
-        isCashier,
+        ADMIN,
+        MANAGER,
+        CASHIER,
+        INVENTORY_MANAGER,
     };
 };

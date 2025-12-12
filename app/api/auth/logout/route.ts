@@ -1,39 +1,50 @@
-// app/api/auth/logout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardRequest, getTokenFromRequest } from '@/lib/api-client';
+import { cookies } from 'next/headers';
+
+const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:4000/api';
 
 export async function POST(request: NextRequest) {
     try {
-        // Check authentication
-        const token = getTokenFromRequest(request);
-        if (!token) {
-            return NextResponse.json(
-                { error: 'Authentication required', code: 'NO_TOKEN' },
-                { status: 401 }
-            );
+        console.log('Frontend API: Logout request');
+
+        const cookieStore = cookies();
+        const accessToken = (await cookieStore).get('accessToken');
+        const refreshToken = (await cookieStore).get('refreshToken');
+
+        // Call backend logout endpoint
+        if (accessToken || refreshToken) {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cookie': `accessToken=${accessToken?.value || ''}; refreshToken=${refreshToken?.value || ''}`,
+                },
+                credentials: 'include',
+            });
         }
 
-        // Forward to your Express backend
-        const response = await forwardRequest('/api/auth/logout', 'POST', request);
+        // Clear cookies on frontend
+        const response = NextResponse.json({ message: 'Logged out successfully' });
 
-        const data = await response.json();
+        response.cookies.delete('accessToken');
+        response.cookies.delete('refreshToken');
 
-        // Clear the refresh token cookie
-        const nextResponse = NextResponse.json(data, {
-            status: response.status,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        console.log('Logout complete, cookies cleared');
 
-        nextResponse.cookies.delete('refreshToken');
+        return response;
 
-        return nextResponse;
     } catch (error) {
-        console.error('Logout route error:', error);
-        return NextResponse.json(
-            { error: 'Internal server error', code: 'INTERNAL_ERROR' },
-            { status: 500 }
+        console.error('Logout API error:', error);
+
+        // Even if backend fails, clear frontend cookies
+        const response = NextResponse.json(
+            { message: 'Logged out (frontend only)' },
+            { status: 200 }
         );
+
+        response.cookies.delete('accessToken');
+        response.cookies.delete('refreshToken');
+
+        return response;
     }
 }

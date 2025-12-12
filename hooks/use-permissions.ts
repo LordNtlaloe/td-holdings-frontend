@@ -1,10 +1,16 @@
 // hooks/usePermissions.ts
 'use client';
 
-import { useUserRole } from './use-current-role';
+import { useCurrentRole } from './use-current-role';
 
 export const usePermissions = () => {
-    const { role, isAdmin, isManager, isCashier } = useUserRole();
+    const { role } = useCurrentRole();
+
+    enum userRole {
+        ADMIN = "ADMIN",
+        MANAGER = "MANAGER",
+        CASHIER = "CASHIER"
+    }
 
     const can = (action: string): boolean => {
         if (!role) return false;
@@ -51,11 +57,11 @@ export const usePermissions = () => {
     };
 
     // Quick permission shortcuts
-    const canManageUsers = isAdmin;
-    const canManageStores = isAdmin;
-    const canManageProducts = isAdmin || isManager;
-    const canManageSales = isAdmin || isManager || isCashier;
-    const canViewReports = isAdmin || isManager;
+    const canManageUsers = userRole.ADMIN;
+    const canManageStores = userRole.ADMIN
+    const canManageProducts = userRole.ADMIN || userRole.MANAGER;
+    const canManageSales = userRole.ADMIN || userRole.MANAGER || userRole.CASHIER;
+    const canViewReports = userRole.ADMIN || userRole.MANAGER;
 
     return {
         can,
@@ -66,8 +72,5 @@ export const usePermissions = () => {
         canViewReports,
         // Role info
         role,
-        isAdmin,
-        isManager,
-        isCashier,
     };
 };

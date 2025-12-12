@@ -1,23 +1,60 @@
+// components/general/user-menu-content.tsx
 "use client"
+
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { UserInfo } from '@/components/general/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
-import { type User } from '@/lib/types';
+import { type BasicUser } from '@/types'; // Use BasicUser
 import Link from 'next/link';
 import { LogOut, Settings } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface UserMenuContentProps {
-    user: User;
+    user: BasicUser; // Changed to BasicUser
 }
 
 export function UserMenuContent({ user }: UserMenuContentProps) {
     const cleanup = useMobileNavigation();
+    const router = useRouter();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
-        await signOut();
-        cleanup();
+        e.stopPropagation();
+
+        if (isLoggingOut) return;
+
+        setIsLoggingOut(true);
+
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Logout failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Logout result:', result);
+
+            cleanup();
+            router.push('/auth/login');
+            router.refresh();
+
+        } catch (error) {
+            console.error('Logout error:', error);
+            cleanup();
+            router.push('/auth/login');
+            router.refresh();
+        } finally {
+            setIsLoggingOut(false);
+        }
     };
 
     return (
@@ -41,14 +78,15 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-                <button
-                    className="flex w-full items-center"
-                    onClick={handleLogout}
-                >
-                    <LogOut className="mr-2" />
-                    Log out
-                </button>
+            <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
+                <div className="flex w-full items-center">
+                    {isLoggingOut ? (
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                        <LogOut className="mr-2" />
+                    )}
+                    {isLoggingOut ? 'Logging out...' : 'Log out'}
+                </div>
             </DropdownMenuItem>
         </DropdownMenuGroup>
     );

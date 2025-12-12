@@ -1,21 +1,41 @@
+// components/general/user-info.tsx
+"use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/use-initials';
-import { type User } from '@/lib/types';
+import { type BasicUser } from '@/types'; // Use BasicUser for display components
 
-export function UserInfo({ user, showEmail = false }: { user: User; showEmail?: boolean }) {
+interface UserInfoProps {
+    user: BasicUser; // Changed to BasicUser
+    showEmail?: boolean;
+}
+
+export function UserInfo({ user, showEmail = false }: UserInfoProps) {
     const getInitials = useInitials();
+    const fallbackInitials = (user.email?.[0] || 'U').toUpperCase();
 
     return (
         <>
             <Avatar className="h-8 w-8 overflow-hidden rounded-full">
-                <AvatarImage src={user.image} alt={user.first_name} />
+                <AvatarImage
+                    src={user.avatar || '/default-avatar.png'}
+                    alt={user.firstName || 'User'}
+                />
                 <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                    {getInitials(user)}
+                    {user.firstName && user.lastName
+                        ? getInitials(user)
+                        : fallbackInitials}
                 </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.first_name} {user.last_name}</span>
-                {showEmail && <span className="text-muted-foreground truncate text-xs">{user.email}</span>}
+                <span className="truncate font-medium">
+                    {user.firstName || 'User'} {user.lastName || ''}
+                </span>
+                {showEmail && user.email && (
+                    <span className="text-muted-foreground truncate text-xs">
+                        {user.email}
+                    </span>
+                )}
             </div>
         </>
     );
