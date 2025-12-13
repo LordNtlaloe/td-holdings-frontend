@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { LoaderCircle, ArrowLeft } from 'lucide-react';
-import { ProductFormValues, ProductSchema, ProductType } from '@/schema';
+import { ProductFormValues, ProductSchema, } from '@/schema';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,7 @@ import {
     FormLabel,
     FormMessage,
     FormControl,
+    FormDescription,
 } from '@/components/ui/form';
 import {
     Select,
@@ -64,8 +65,8 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
             grade: 'A',
             commodity: '',
             storeId: '',
-            tireCategory: '',
-            tireUsage: '',
+            tireCategory: 'NEW',
+            tireUsage: 'REGULAR',
             tireSize: '',
             loadIndex: '',
             speedRating: '',
@@ -122,10 +123,10 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                         quantity: product.quantity,
                         type: product.type,
                         grade: product.grade,
-                        commodity: product.commodity,
+                        commodity: product.commodity || '',
                         storeId: product.storeId,
-                        tireCategory: product.tireCategory || '',
-                        tireUsage: product.tireUsage || '',
+                        tireCategory: product.tireCategory || 'NEW',
+                        tireUsage: product.tireUsage || 'REGULAR',
                         tireSize: product.tireSize || '',
                         loadIndex: product.loadIndex || '',
                         speedRating: product.speedRating || '',
@@ -185,7 +186,7 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                 // Redirect after success
                 setTimeout(() => {
                     router.push('/products');
-                    router.refresh(); // Refresh the page data
+                    router.refresh();
                 }, 1500);
             } else {
                 setAlert({
@@ -469,20 +470,22 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                     )}
                                 />
 
-                                {/* Commodity */}
                                 <FormField
                                     control={form.control}
                                     name="commodity"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Commodity *</FormLabel>
+                                            <FormLabel>Commodity</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
-                                                    placeholder="Enter commodity"
+                                                    placeholder="Enter commodity (optional)"
                                                     disabled={loading}
                                                 />
                                             </FormControl>
+                                            <FormDescription>
+                                                Optional product category or description
+                                            </FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -514,11 +517,8 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="PASSENGER">Passenger</SelectItem>
-                                                        <SelectItem value="TRUCK">Truck</SelectItem>
-                                                        <SelectItem value="SUV">SUV</SelectItem>
-                                                        <SelectItem value="MOTORCYCLE">Motorcycle</SelectItem>
-                                                        <SelectItem value="INDUSTRIAL">Industrial</SelectItem>
+                                                        <SelectItem value="NEW">New</SelectItem>
+                                                        <SelectItem value="SECOND_HAND">Second Hand</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -544,11 +544,9 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="ALL_SEASON">All Season</SelectItem>
-                                                        <SelectItem value="SUMMER">Summer</SelectItem>
-                                                        <SelectItem value="WINTER">Winter</SelectItem>
-                                                        <SelectItem value="PERFORMANCE">Performance</SelectItem>
-                                                        <SelectItem value="OFF_ROAD">Off-Road</SelectItem>
+                                                        <SelectItem value="FOUR_BY_FOUR">4x4</SelectItem>
+                                                        <SelectItem value="REGULAR">Regular</SelectItem>
+                                                        <SelectItem value="TRUCK">Truck</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -587,6 +585,9 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         disabled={loading}
                                                     />
                                                 </FormControl>
+                                                <FormDescription>
+                                                    Optional - indicates maximum load capacity
+                                                </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -605,6 +606,9 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         disabled={loading}
                                                     />
                                                 </FormControl>
+                                                <FormDescription>
+                                                    Optional - indicates maximum speed rating
+                                                </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -623,6 +627,9 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         disabled={loading}
                                                     />
                                                 </FormControl>
+                                                <FormDescription>
+                                                    Optional - warranty duration if applicable
+                                                </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -710,6 +717,9 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         disabled={loading}
                                                     />
                                                 </FormControl>
+                                                <FormDescription>
+                                                    Optional - date when bale was imported
+                                                </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -731,6 +741,9 @@ export default function ProductForm({ productId, mode = 'create' }: ProductFormP
                                                         onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
                                                     />
                                                 </FormControl>
+                                                <FormDescription>
+                                                    Optional - number of pieces in the bale
+                                                </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}

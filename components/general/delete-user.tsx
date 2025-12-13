@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import HeadingSmall from '@/components/general/heading-small';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth-context';
 
 interface DeleteUserProps {
     userId: string;

@@ -29,12 +29,66 @@ export async function getAllProducts(): Promise<Product[]> {
         }
 
         const data = await response.json();
+        console.log('Raw API response:', data); // Debug log
+
         const products = data.products || data || [];
+        console.log('Extracted products array:', products); // Debug log
 
         // Transform the data to match Product type
-        return products.map((product: any) => ({
-            // ... your transformation logic
-        }));
+        return products.map((product: any) => {
+            const transformed: Product = {
+                id: product.id,
+                name: product.name,
+                price: Number(product.price),
+                quantity: Number(product.quantity),
+                type: product.type,
+                grade: product.grade,
+                commodity: product.commodity || null,
+                storeId: product.storeId,
+
+                // Store relationship
+                store: product.store ? {
+                    id: product.store.id,
+                    name: product.store.name,
+                    location: product.store.location,
+                    createdAt: new Date(product.store.createdAt),
+                    updatedAt: new Date(product.store.updatedAt),
+                    employees: [],
+                    products: [],
+                    sales: [],
+                    storeProducts: [],
+                    productTransfersFrom: [],
+                    productTransfersTo: [],
+                } : undefined as any,
+
+                // Tire fields
+                tireCategory: product.tireCategory || null,
+                tireUsage: product.tireUsage || null,
+                tireSize: product.tireSize || null,
+                loadIndex: product.loadIndex || null,
+                speedRating: product.speedRating || null,
+                warrantyPeriod: product.warrantyPeriod || null,
+
+                // Bale fields
+                baleWeight: product.baleWeight || null,
+                baleCategory: product.baleCategory || null,
+                originCountry: product.originCountry || null,
+                importDate: product.importDate ? new Date(product.importDate) : null,
+                baleCount: product.baleCount || null,
+
+                // Timestamps
+                createdAt: new Date(product.createdAt),
+                updatedAt: new Date(product.updatedAt),
+
+                // Empty relationships
+                saleItems: [],
+                storeProducts: [],
+                productTransfers: [],
+            };
+
+            console.log('Mapped product:', transformed); // Debug log
+            return transformed;
+        });
 
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -93,8 +147,8 @@ export async function getAllProductsWithParams(params?: ProductFilters): Promise
         const products = (data.products || data || []).map((product: any) => ({
             id: product.id,
             name: product.name,
-            price: product.price,
-            quantity: product.quantity,
+            price: Number(product.price),
+            quantity: Number(product.quantity),
             type: product.type,
             grade: product.grade,
             commodity: product.commodity,
@@ -103,6 +157,14 @@ export async function getAllProductsWithParams(params?: ProductFilters): Promise
                 id: product.store.id,
                 name: product.store.name,
                 location: product.store.location,
+                createdAt: new Date(product.store.createdAt),
+                updatedAt: new Date(product.store.updatedAt),
+                employees: [],
+                products: [],
+                sales: [],
+                storeProducts: [],
+                productTransfersFrom: [],
+                productTransfersTo: [],
             } : undefined,
 
             // Tire fields
@@ -123,6 +185,11 @@ export async function getAllProductsWithParams(params?: ProductFilters): Promise
             // Timestamps
             createdAt: new Date(product.createdAt),
             updatedAt: new Date(product.updatedAt),
+
+            // Empty relationships
+            saleItems: [],
+            storeProducts: [],
+            productTransfers: [],
         }));
 
         // Check if response is paginated or just an array
@@ -155,6 +222,7 @@ export async function getAllProductsWithParams(params?: ProductFilters): Promise
         };
     }
 }
+
 // Enhanced version with error handling wrapper
 export async function safeGetAllProducts(): Promise<{
     data: Product[];
@@ -293,8 +361,8 @@ export async function getProductById(id: string): Promise<{
         const product: Product = {
             id: data.id,
             name: data.name,
-            price: data.price,
-            quantity: data.quantity,
+            price: Number(data.price),
+            quantity: Number(data.quantity),
             type: data.type,
             grade: data.grade,
             commodity: data.commodity,
@@ -303,7 +371,15 @@ export async function getProductById(id: string): Promise<{
                 id: data.store.id,
                 name: data.store.name,
                 location: data.store.location,
-            } : undefined,
+                createdAt: new Date(data.store.createdAt),
+                updatedAt: new Date(data.store.updatedAt),
+                employees: [],
+                products: [],
+                sales: [],
+                storeProducts: [],
+                productTransfersFrom: [],
+                productTransfersTo: [],
+            } : undefined as any,
 
             // Tire fields
             tireCategory: data.tireCategory,
@@ -323,6 +399,11 @@ export async function getProductById(id: string): Promise<{
             // Timestamps
             createdAt: new Date(data.createdAt),
             updatedAt: new Date(data.updatedAt),
+
+            // Empty relationships
+            saleItems: [],
+            storeProducts: [],
+            productTransfers: [],
         };
 
         return { success: true, data: product };
@@ -358,8 +439,8 @@ export async function getLowStockProducts(threshold: number = 10): Promise<{
         const products = (data || []).map((product: any) => ({
             id: product.id,
             name: product.name,
-            price: product.price,
-            quantity: product.quantity,
+            price: Number(product.price),
+            quantity: Number(product.quantity),
             type: product.type,
             grade: product.grade,
             commodity: product.commodity,
@@ -368,6 +449,14 @@ export async function getLowStockProducts(threshold: number = 10): Promise<{
                 id: product.store.id,
                 name: product.store.name,
                 location: product.store.location,
+                createdAt: new Date(product.store.createdAt),
+                updatedAt: new Date(product.store.updatedAt),
+                employees: [],
+                products: [],
+                sales: [],
+                storeProducts: [],
+                productTransfersFrom: [],
+                productTransfersTo: [],
             } : undefined,
 
             // Tire fields
@@ -388,6 +477,11 @@ export async function getLowStockProducts(threshold: number = 10): Promise<{
             // Timestamps
             createdAt: new Date(product.createdAt),
             updatedAt: new Date(product.updatedAt),
+
+            // Empty relationships
+            saleItems: [],
+            storeProducts: [],
+            productTransfers: [],
         }));
 
         return { success: true, data: products };
@@ -542,8 +636,8 @@ export async function searchProducts(searchTerm: string): Promise<{
         const products = (data.products || data || []).map((product: any) => ({
             id: product.id,
             name: product.name,
-            price: product.price,
-            quantity: product.quantity,
+            price: Number(product.price),
+            quantity: Number(product.quantity),
             type: product.type,
             grade: product.grade,
             commodity: product.commodity,
@@ -552,6 +646,14 @@ export async function searchProducts(searchTerm: string): Promise<{
                 id: product.store.id,
                 name: product.store.name,
                 location: product.store.location,
+                createdAt: new Date(product.store.createdAt),
+                updatedAt: new Date(product.store.updatedAt),
+                employees: [],
+                products: [],
+                sales: [],
+                storeProducts: [],
+                productTransfersFrom: [],
+                productTransfersTo: [],
             } : undefined,
 
             // Tire fields
@@ -572,6 +674,11 @@ export async function searchProducts(searchTerm: string): Promise<{
             // Timestamps
             createdAt: new Date(product.createdAt),
             updatedAt: new Date(product.updatedAt),
+
+            // Empty relationships
+            saleItems: [],
+            storeProducts: [],
+            productTransfers: [],
         }));
 
         return { success: true, data: products };
@@ -607,8 +714,8 @@ export async function getProductsByStore(storeId: string): Promise<{
         const products = (data.products || data || []).map((product: any) => ({
             id: product.id,
             name: product.name,
-            price: product.price,
-            quantity: product.quantity,
+            price: Number(product.price),
+            quantity: Number(product.quantity),
             type: product.type,
             grade: product.grade,
             commodity: product.commodity,
@@ -617,6 +724,14 @@ export async function getProductsByStore(storeId: string): Promise<{
                 id: product.store.id,
                 name: product.store.name,
                 location: product.store.location,
+                createdAt: new Date(product.store.createdAt),
+                updatedAt: new Date(product.store.updatedAt),
+                employees: [],
+                products: [],
+                sales: [],
+                storeProducts: [],
+                productTransfersFrom: [],
+                productTransfersTo: [],
             } : undefined,
 
             // Tire fields
@@ -637,6 +752,11 @@ export async function getProductsByStore(storeId: string): Promise<{
             // Timestamps
             createdAt: new Date(product.createdAt),
             updatedAt: new Date(product.updatedAt),
+
+            // Empty relationships
+            saleItems: [],
+            storeProducts: [],
+            productTransfers: [],
         }));
 
         return { success: true, data: products };

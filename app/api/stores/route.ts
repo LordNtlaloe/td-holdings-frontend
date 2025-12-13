@@ -1,106 +1,10 @@
-// app/api/stores/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-
-const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:4000/api';
+import { proxyRequest } from '@/lib/api-proxy';
 
 export async function GET(request: NextRequest) {
-    try {
-        console.log('Stores API: Fetching stores');
-
-        const cookieStore = await cookies();
-        const accessToken = cookieStore.get('accessToken');
-
-        if (!accessToken) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
-
-        // Get query parameters
-        const { searchParams } = new URL(request.url);
-        const page = searchParams.get('page') || '1';
-        const limit = searchParams.get('limit') || '100';
-
-        // Fetch stores from backend
-        const response = await fetch(`${API_BASE_URL}/stores?page=${page}&limit=${limit}`, {
-            headers: {
-                'Cookie': `accessToken=${accessToken.value}`,
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-        });
-
-        if (!response.ok) {
-            return NextResponse.json(
-                { error: 'Failed to fetch stores' },
-                { status: response.status }
-            );
-        }
-
-        const stores = await response.json();
-        return NextResponse.json(stores);
-
-    } catch (error) {
-        console.error('Stores API error:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
-    }
+    return proxyRequest(request, '/v1/stores');
 }
 
 export async function POST(request: NextRequest) {
-    try {
-        console.log('Stores API: Creating store');
-
-        const cookieStore = await cookies();
-        const accessToken = cookieStore.get('accessToken');
-
-        if (!accessToken) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
-
-        const body = await request.json();
-        const { name, location } = body;
-
-        if (!name || !location) {
-            return NextResponse.json(
-                { error: 'Name and location are required' },
-                { status: 400 }
-            );
-        }
-
-        const response = await fetch(`${API_BASE_URL}/stores`, {
-            method: 'POST',
-            headers: {
-                'Cookie': `accessToken=${accessToken.value}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name, location }),
-            credentials: 'include',
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            return NextResponse.json(
-                { error: data.error || 'Failed to create store' },
-                { status: response.status }
-            );
-        }
-
-        return NextResponse.json(data, { status: 201 });
-
-    } catch (error) {
-        console.error('Create store API error:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
-    }
+    return proxyRequest(request, '/v1/stores');
 }

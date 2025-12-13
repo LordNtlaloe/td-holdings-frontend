@@ -1,7 +1,7 @@
 // hooks/useUserRole.ts
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth-context';
 import { useEffect, useState } from 'react';
 
 export const useCurrentRole = () => {

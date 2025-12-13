@@ -18,7 +18,7 @@ export function UserInfo({ user, showEmail = false }: UserInfoProps) {
         <>
             <Avatar className="h-8 w-8 overflow-hidden rounded-full">
                 <AvatarImage
-                    src={user.avatar || '/default-avatar.png'}
+                    src={user.avatar || '/Images/TD-Logo.png'}
                     alt={user.firstName || 'User'}
                 />
                 <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">

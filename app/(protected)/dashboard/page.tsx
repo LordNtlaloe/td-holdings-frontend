@@ -7,7 +7,7 @@ import { SalesGrowthChart } from "@/components/dashboard/sales-growth-chart";
 import { SalesKPIs } from "@/components/dashboard/sales-kpis";
 import { StockByStoreChart } from "@/components/dashboard/stock-by-store-chart";
 import { Alert } from "@/components/ui/alert";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/auth-context";
 import AppLayout from "@/layouts/app-layout";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react"
