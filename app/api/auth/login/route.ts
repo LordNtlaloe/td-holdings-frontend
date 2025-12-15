@@ -1,5 +1,4 @@
-// @/app/api/auth/register/route.ts
-
+// @/app/api/auth/login/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -8,11 +7,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
+        const userAgent = request.headers.get('user-agent') || '';
 
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch(`${API_BASE_URL}/auth/sign-in`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'User-Agent': userAgent,
             },
             body: JSON.stringify(body),
         });
@@ -23,9 +24,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(data, { status: response.status });
         }
 
-        return NextResponse.json(data, { status: 201 });
+        return NextResponse.json(data);
     } catch (error) {
-        console.error('Register API error:', error);
+        console.error('Sign-in API error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
@@ -38,4 +39,4 @@ export async function GET() {
         { error: 'Method not allowed' },
         { status: 405 }
     );
-};
+}
