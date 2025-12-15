@@ -1,5 +1,5 @@
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { type BreadcrumbItem as BreadcrumbItemType } from '@/lib/types';
+import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import Link from 'next/link';
 import { Fragment } from 'react';
 

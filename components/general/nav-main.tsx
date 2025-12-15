@@ -1,7 +1,7 @@
 'use client';
 
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/lib/types';
+import { type NavItem } from '@/types';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 

@@ -31,6 +31,7 @@ export interface User extends BaseModel {
     email: string;
     password: string;
     phone: string;
+    avatar: string;
     role: Role;
     isActive: boolean;
     isVerified: boolean;

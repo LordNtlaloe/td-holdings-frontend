@@ -112,7 +112,8 @@ function shouldRefreshToken(decodedToken: DecodedToken): boolean {
     return expiresIn < 5 * 60 * 1000;
 }
 
-export async function middleware(request: NextRequest) {
+// Changed from "middleware" to "proxy" named export
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Allow public routes
@@ -221,6 +222,9 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
 }
+
+// Optional: You can also export a default function if you prefer
+// export default proxy;
 
 export const config = {
     matcher: [
