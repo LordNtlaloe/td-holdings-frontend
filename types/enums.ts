@@ -1,3 +1,32 @@
+import { LucideIcon } from "lucide-react";
+import { Config } from "ziggy-js";
+import { User } from "./models";
+
+export interface BreadcrumbItem {
+    title: string;
+    href: string;
+}
+
+export interface NavGroup {
+    title: string;
+    items: NavItem[];
+}
+
+export interface NavItem {
+    title: string;
+    href: string;
+    icon?: LucideIcon | null;
+    isActive?: boolean;
+}
+
+export interface SharedData {
+    name: string;
+    quote: { message: string; author: string };
+    auth: User;
+    ziggy: Config & { location: string };
+    [key: string]: unknown;
+}
+
 // Role enums
 export enum Role {
     ADMIN = 'ADMIN',
