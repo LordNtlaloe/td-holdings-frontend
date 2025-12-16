@@ -75,7 +75,6 @@ export const RegisterSchema = Joi.object({
             'any.only': 'Please select a valid role',
             'any.required': 'Role is required'
         }),
-    storeId: Joi.string().optional()
 });
 
 export const VerifyAccountSchema = Joi.object({

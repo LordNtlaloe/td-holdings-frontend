@@ -44,45 +44,51 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const routePermissions: Record<Role, string[]> = {
     [Role.ADMIN]: [
         '/dashboard',
-        '/dashboard/users',
-        '/dashboard/employees',
-        '/dashboard/stores',
-        '/dashboard/products',
-        '/dashboard/inventory',
-        '/dashboard/transfers',
-        '/dashboard/sales',
-        '/dashboard/reports',
-        '/dashboard/audit',
-        '/dashboard/analytics',
-        '/dashboard/settings',
-        '/dashboard/categories',
-        '/dashboard/suppliers',
-        '/dashboard/customers',
-        '/dashboard/warehouses',
-        '/dashboard/system'
+        '/dashboard/*',  // Allow all dashboard subroutes for admin
+        '/users',
+        '/users/*',
+        '/employees',
+        '/employees/*',
+        '/branches',
+        '/branches/*',
+        '/products',
+        '/products/*',
+        '/inventory',
+        '/inventory/*',
+        '/transfers',
+        '/transfers/*',
+        '/sales',
+        '/sales/*',
+        '/reports',
+        '/reports/*'
     ],
     [Role.MANAGER]: [
         '/dashboard',
-        '/dashboard/employees',
-        '/dashboard/stores',
-        '/dashboard/products',
-        '/dashboard/inventory',
-        '/dashboard/transfers',
-        '/dashboard/sales',
-        '/dashboard/reports',
-        '/dashboard/analytics',
-        '/dashboard/suppliers',
-        '/dashboard/customers',
-        '/dashboard/warehouses'
+        '/dashboard/*',  // Allow all dashboard subroutes for manager
+        '/branches',
+        '/branches/*',
+        '/products',
+        '/products/*',
+        '/inventory',
+        '/inventory/*',
+        '/transfers',
+        '/transfers/*',
+        '/sales',
+        '/sales/*',
+        '/reports',
+        '/reports/*'
     ],
     [Role.CASHIER]: [
         '/dashboard',
-        '/dashboard/products',
-        '/dashboard/inventory',
-        '/dashboard/sales',
-        '/dashboard/customers',
-        '/dashboard/checkout',
-        '/dashboard/pos'
+        '/dashboard/*',  // Allow all dashboard subroutes for cashier
+        '/products',
+        '/products/*',
+        '/inventory',
+        '/inventory/*',
+        '/sales',
+        '/sales/*',
+        '/customers',
+        '/customers/*'
     ]
 };
 
@@ -91,11 +97,11 @@ const SYSTEM_ROLES: Role[] = [Role.ADMIN, Role.MANAGER, Role.CASHIER];
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
-    '/auth/login',
-    '/auth/register',
-    '/auth/verify',
-    '/auth/forgot-password',
-    '/auth/reset-password'
+    '/sign-in',
+    '/sign-up',
+    '/verify',
+    '/forgot-password',
+    '/reset-password'
 ];
 
 // Safe function to get allowed routes with fallback
@@ -231,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
             // Redirect to login if trying to access protected routes while not authenticated
             if (!isPublicRoute(pathname) && pathname.startsWith('/dashboard')) {
-                router.push('/auth/login');
+                router.push('/sign-in');
                 return;
             }
         }
@@ -272,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setAuthState(prev => ({ ...prev, isLoading: true }));
 
-            const response = await fetch('/api/auth/sign-in', {
+            const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -345,7 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     router.push(`/auth/verify?email=${encodeURIComponent(userData.email)}`);
                 } else {
                     // For admin/manager, redirect to login
-                    router.push(`/auth/login?registered=true&email=${encodeURIComponent(userData.email)}`);
+                    router.push(`/sign-in?registered=true&email=${encodeURIComponent(userData.email)}`);
                 }
             } else {
                 throw new Error(data.message || 'Registration failed');
@@ -386,7 +392,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isAuthenticated: false,
             });
 
-            router.push('/auth/login');
+            router.push('/sign-in');
         }
     };
 
@@ -406,7 +412,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
 
             if (response.ok) {
-                router.push('/auth/login?verified=true');
+                router.push('/?verified=true');
             } else {
                 throw new Error(data.error || 'Verification failed');
             }

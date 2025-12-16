@@ -53,11 +53,11 @@ export function AppSidebar() {
     const userRole = auth;
     
     const filteredNavItems = mainNavItems.filter((item) => {
-        if (userRole === 'CASHIER') {
+        if (userRole === 'ADMIN') {
             return true; // Show all items for admin
         } else if (userRole === 'MANAGER') {
             return !['Users'].includes(item.title); // Hide "Users" for manager
-        } else if (userRole === 'ADMIN') {
+        } else if (userRole === 'CASHIER') {
             return !['Users', 'Employees', 'Branches'].includes(item.title); // Hide these for cashier
         }
         return false; // Default: hide all (or adjust as needed)

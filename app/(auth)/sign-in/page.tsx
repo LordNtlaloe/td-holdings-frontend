@@ -39,19 +39,22 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const registeredEmail = searchParams?.get("registered");
+    // Fixed: Get the correct query parameters
+    const registered = searchParams?.get("registered"); // This should be "true" or null
+    const emailFromUrl = searchParams?.get("email"); // This is the actual email
     const verified = searchParams?.get("verified");
     const redirect = searchParams?.get("redirect");
 
     const form = useForm<LoginFormData>({
         resolver: joiResolver(LoginSchema),
         defaultValues: {
-            email: registeredEmail || "",
+            email: emailFromUrl || "", // Use emailFromUrl instead of registered
             password: "",
             remember: false,
         },
     });
 
+    // In your LoginPage component
     const onSubmit = async (values: LoginFormData) => {
         setError("");
         setSuccess("");
@@ -60,19 +63,28 @@ export default function LoginPage() {
         try {
             await login(values.email, values.password);
 
-            if (registeredEmail) {
+            // Show success message based on query params
+            if (registered === "true") {
                 setSuccess("Account created successfully! Please log in.");
-            } else if (verified) {
+            } else if (verified === "true") {
                 setSuccess("Account verified successfully! Please log in.");
             }
 
+            // Redirect after successful login
             if (redirect) {
                 router.push(redirect);
             }
         } catch (err: any) {
-            setError(
-                err?.message || "Failed to log in. Please check your credentials."
-            );
+            // Specific error messages for common issues
+            if (err.message.includes('HTML')) {
+                setError("Server configuration error. Please contact support.");
+            } else if (err.message.includes('Network')) {
+                setError("Cannot connect to server. Please check your internet connection.");
+            } else if (err.message.includes('JSON')) {
+                setError("Server returned invalid response. Please try again later.");
+            } else {
+                setError(err?.message || "Failed to log in. Please check your credentials.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -90,6 +102,19 @@ export default function LoginPage() {
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-8">
+                {/* Show success message at the top if user just registered */}
+                {registered === "true" && (
+                    <div className="mb-6">
+                        <FormSuccess message="Registration successful! Please sign in with your credentials." />
+                    </div>
+                )}
+
+                {verified === "true" && (
+                    <div className="mb-6">
+                        <FormSuccess message="Email verified successfully! You can now sign in." />
+                    </div>
+                )}
+
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
@@ -119,7 +144,7 @@ export default function LoginPage() {
                                 <FormItem>
                                     <div className="flex items-center justify-between">
                                         <FormLabel>Password</FormLabel>
-                                        <TextLink href="/auth/forgot-password" className="text-sm">
+                                        <TextLink href="/forgot-password" className="text-sm">
                                             Forgot password?
                                         </TextLink>
                                     </div>
@@ -136,6 +161,7 @@ export default function LoginPage() {
                                                 type="button"
                                                 onClick={() => setShowPassword(!showPassword)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                                                disabled={isSubmitting || isLoading}
                                             >
                                                 {showPassword ? (
                                                     <EyeOff className="h-4 w-4" />
@@ -181,8 +207,8 @@ export default function LoginPage() {
                         </Button>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Don’t have an account?{" "}
-                            <TextLink href="/auth/register">Create one</TextLink>
+                            Don't have an account?{" "}
+                            <TextLink href="/sign-up">Create one</TextLink>
                         </div>
                     </form>
                 </Form>

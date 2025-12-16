@@ -10,6 +10,8 @@ import {
     SortOrder
 } from './enums';
 
+import { Store } from './stores';
+
 // ========== Base Models ==========
 
 export interface BaseModel {
@@ -89,24 +91,6 @@ export interface PasswordReset {
     user: User;
 }
 
-// ========== Store ==========
-
-export interface Store extends BaseModel {
-    name: string;
-    location: string;
-    phone: string;
-    email: string;
-    isMainStore: boolean;
-
-    // Relationships
-    employees?: Employee[];
-    inventories?: Inventory[];
-    sales?: Sale[];
-    storeProducts?: StoreProduct[];
-    sentTransfers?: ProductTransfer[];
-    receivedTransfers?: ProductTransfer[];
-    users?: User[];
-}
 
 // ========== Product ==========
 
@@ -295,15 +279,6 @@ export interface ActivityLog {
 
 // ========== Utility Types ==========
 
-export interface PaginatedResponse<T> {
-    data: T[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrevious: boolean;
-}
 
 export interface FilterParams {
     page?: number;

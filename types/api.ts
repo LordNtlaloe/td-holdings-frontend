@@ -1,15 +1,14 @@
 import { Role, ProductType, TransferStatus, PaymentMethodType } from './enums';
 import {
     User,
-    Store,
     Product,
     Inventory,
     ProductTransfer,
     Sale,
     Employee,
     ActivityLog,
-    PaginatedResponse
 } from './models';
+import { PaginatedResponse } from './stores';
 
 // ========== Auth API Types ==========
 
@@ -85,10 +84,6 @@ export interface UpdateStoreRequest {
     isMainStore?: boolean;
 }
 
-export interface StoreFilters {
-    search?: string;
-    isMainStore?: boolean;
-}
 
 // ========== Product API Types ==========
 

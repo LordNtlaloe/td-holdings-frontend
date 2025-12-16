@@ -32,7 +32,6 @@ interface RegisterFormData {
     lastName: string;
     phone: string;
     role: Role;
-    storeId?: string;
 }
 
 export default function RegisterPage() {
@@ -44,7 +43,6 @@ export default function RegisterPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [stores, setStores] = useState<Array<{ id: string; name: string }>>([]);
 
 
     const form = useForm<RegisterFormData>({
@@ -57,25 +55,8 @@ export default function RegisterPage() {
             lastName: "",
             phone: "",
             role: Role.CASHIER,
-            storeId: "",
         },
     });
-
-    // Fetch stores when component mounts
-    React.useEffect(() => {
-        const fetchStores = async () => {
-            try {
-                const response = await fetch("/api/stores");
-                if (response.ok) {
-                    const data = await response.json();
-                    setStores(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch stores:", error);
-            }
-        };
-        fetchStores();
-    }, []);
 
     const onSubmit = async (values: RegisterFormData) => {
         setError("");
@@ -89,8 +70,7 @@ export default function RegisterPage() {
                 firstName: values.firstName,
                 lastName: values.lastName,
                 phone: values.phone,
-                role: values.role,
-                storeId: values.storeId,
+                role: values.role
             });
 
             setSuccess("Account created successfully! Redirecting...");
@@ -114,15 +94,6 @@ export default function RegisterPage() {
 
     return (
         <div className="w-[500px] max-w-md mx-auto">
-            <Button
-                variant="ghost"
-                onClick={() => router.push("/auth/login")}
-                className="mb-6 -ml-2"
-            >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to login
-            </Button>
-
             <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                     <UserPlus className="h-8 w-8 text-primary" />
@@ -249,37 +220,6 @@ export default function RegisterPage() {
                                     </FormItem>
                                 )}
                             />
-
-                            {(role === "CASHIER" || role === "MANAGER") && (
-                                <FormField
-                                    control={form.control}
-                                    name="storeId"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Store</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                disabled={isSubmitting || isLoading}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select store" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {stores.map((store) => (
-                                                        <SelectItem key={store.id} value={store.id}>
-                                                            {store.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
                         </div>
 
                         <FormField
@@ -361,7 +301,7 @@ export default function RegisterPage() {
                         <Button
                             type="submit"
                             disabled={isSubmitting || isLoading}
-                            className="w-full"
+                            className="w-full cursor-pointer"
                         >
                             {(isSubmitting || isLoading) && (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
