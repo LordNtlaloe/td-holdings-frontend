@@ -1,3 +1,4 @@
+import { Employee } from './employees';
 import {
     Role,
     ProductType,
@@ -11,6 +12,7 @@ import {
 } from './enums';
 
 import { Store } from './stores';
+import { User } from './users';
 
 // ========== Base Models ==========
 
@@ -27,30 +29,7 @@ export interface Timestamps {
 
 // ========== User & Authentication ==========
 
-export interface User extends BaseModel {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    phone: string;
-    avatar: string;
-    role: Role;
-    isActive: boolean;
-    isVerified: boolean;
-    lastLogin: Date | null;
-    storeId: string | null;
 
-    // Relationships
-    employee?: Employee;
-    store?: Store;
-    refreshTokens?: RefreshToken[];
-    verificationCodes?: VerificationCode[];
-    passwordResets?: PasswordReset[];
-    activities?: ActivityLog[];
-    sales?: Sale[];
-    productTransfers?: ProductTransfer[];
-    inventoryHistories?: InventoryHistory[];
-}
 
 export interface RefreshToken {
     id: string;
@@ -249,18 +228,6 @@ export interface VoidedSale {
 
 // ========== Employees ==========
 
-export interface Employee {
-    id: string;
-    userId: string;
-    storeId: string;
-    position: string;
-    role: Role;
-
-    // Relationships
-    user: User;
-    store: Store;
-    sales?: Sale[];
-}
 
 // ========== Activity Logs ==========
 

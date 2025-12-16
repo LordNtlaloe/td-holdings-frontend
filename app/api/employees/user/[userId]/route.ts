@@ -2,18 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-// Helper function to forward requests
 async function forwardRequest(
     request: NextRequest,
-    path: string,
+    url: string,
     method: string = 'GET',
     body?: any
 ) {
     try {
         const token = request.headers.get('Authorization');
-        const url = `${API_BASE_URL}${path}`;
 
-        console.log(`🟦 Forwarding ${method} request to:`, url);
+        console.log(`🟦 ${method} API Route - Forwarding to backend:`, url);
 
         const options: RequestInit = {
             method,
@@ -29,11 +27,10 @@ async function forwardRequest(
         }
 
         const response = await fetch(url, options);
-        console.log(`🟦 Backend response status:`, response.status);
+        console.log('🟦 Backend response status:', response.status);
 
         const responseText = await response.text();
 
-        // Check if it's HTML error page
         if (responseText.trim().startsWith('<!DOCTYPE') || responseText.includes('<html>')) {
             console.error('🔴 Backend returned HTML error page');
             return NextResponse.json(
@@ -46,10 +43,9 @@ async function forwardRequest(
             );
         }
 
-        // Parse JSON response
         let data;
         try {
-            data = responseText ? JSON.parse(responseText) : {};
+            data = JSON.parse(responseText);
         } catch (parseError) {
             console.error('🔴 Failed to parse backend response as JSON:', parseError);
             return NextResponse.json(
@@ -89,38 +85,37 @@ async function forwardRequest(
     }
 }
 
-// GET all employees
-export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
+// GET employee by user ID
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ userId: string }> }
+) {
+    try {
+        const { userId } = await params;
 
-    // Extract query parameters
-    const page = searchParams.get('page') || '1';
-    const limit = searchParams.get('limit') || '50';
-    const storeId = searchParams.get('storeId');
-    const role = searchParams.get('role');
-    const position = searchParams.get('position');
-    const status = searchParams.get('status');
-    const search = searchParams.get('search');
+        if (!userId || userId === 'undefined') {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Invalid user ID',
+                    message: 'User ID is required'
+                },
+                { status: 400 }
+            );
+        }
 
-    // Build query string
-    const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
+        const url = `${API_BASE_URL}/employees/user/${userId}`;
+        return forwardRequest(request, url, 'GET');
 
-    if (storeId) queryParams.append('storeId', storeId);
-    if (role) queryParams.append('role', role);
-    if (position) queryParams.append('position', position);
-    if (status) queryParams.append('status', status);
-    if (search) queryParams.append('search', search);
-
-    const queryString = queryParams.toString();
-    const path = `/employees${queryString ? `?${queryString}` : ''}`;
-
-    return forwardRequest(request, path);
-}
-
-// POST create new employee
-export async function POST(request: NextRequest) {
-    const body = await request.json();
-    return forwardRequest(request, '/employees', 'POST', body);
+    } catch (error: any) {
+        console.error('🔴 Employee by User ID API Route Error:', error);
+        return NextResponse.json(
+            {
+                success: false,
+                error: 'Internal server error',
+                message: error.message
+            },
+            { status: 500 }
+        );
+    }
 }

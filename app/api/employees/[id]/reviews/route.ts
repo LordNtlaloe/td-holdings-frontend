@@ -85,7 +85,7 @@ async function forwardRequest(
     }
 }
 
-// GET employee transfers
+// GET employee performance reviews
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -113,12 +113,12 @@ export async function GET(
         queryParams.append('limit', limit);
 
         const queryString = queryParams.toString();
-        const url = `${API_BASE_URL}/employees/${employeeId}/transfers${queryString ? `?${queryString}` : ''}`;
+        const url = `${API_BASE_URL}/employees/${employeeId}/reviews${queryString ? `?${queryString}` : ''}`;
 
         return forwardRequest(request, url, 'GET');
 
     } catch (error: any) {
-        console.error('🔴 Employee Transfers API Route Error:', error);
+        console.error('🔴 Employee Reviews API Route Error:', error);
         return NextResponse.json(
             {
                 success: false,
@@ -130,7 +130,7 @@ export async function GET(
     }
 }
 
-// POST create employee transfer
+// POST create performance review
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -150,12 +150,12 @@ export async function POST(
         }
 
         const body = await request.json();
-        const url = `${API_BASE_URL}/employees/${employeeId}/transfers`;
+        const url = `${API_BASE_URL}/employees/${employeeId}/reviews`;
 
         return forwardRequest(request, url, 'POST', body);
 
     } catch (error: any) {
-        console.error('🔴 Create Transfer API Route Error:', error);
+        console.error('🔴 Create Review API Route Error:', error);
         return NextResponse.json(
             {
                 success: false,

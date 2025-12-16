@@ -1,70 +1,14 @@
 import { Role, ProductType, TransferStatus, PaymentMethodType } from './enums';
 import {
-    User,
     Product,
     Inventory,
     ProductTransfer,
     Sale,
-    Employee,
     ActivityLog,
 } from './models';
 import { PaginatedResponse } from './stores';
 
 // ========== Auth API Types ==========
-
-export interface LoginRequest {
-    email: string;
-    password: string;
-}
-
-export interface LoginResponse {
-    user: User;
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-}
-
-export interface RegisterRequest {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    role?: Role;
-    storeId?: string;
-}
-
-export interface RegisterResponse {
-    message: string;
-    user: User;
-    verificationCode?: string;
-}
-
-export interface VerifyAccountRequest {
-    email: string;
-    code: string;
-}
-
-export interface PasswordResetRequest {
-    email: string;
-}
-
-export interface PasswordResetConfirmRequest {
-    email: string;
-    resetToken: string;
-    newPassword: string;
-}
-
-export interface ChangePasswordRequest {
-    currentPassword: string;
-    newPassword: string;
-}
-
-export interface UpdateProfileRequest {
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-}
 
 // ========== Store API Types ==========
 
@@ -238,11 +182,6 @@ export interface UpdateEmployeeRequest {
     storeId?: string;
 }
 
-export interface EmployeeFilters {
-    storeId?: string;
-    role?: Role;
-    search?: string;
-}
 
 // ========== User API Types ==========
 
@@ -265,12 +204,6 @@ export interface UpdateUserRequest {
     isActive?: boolean;
 }
 
-export interface UserFilters {
-    role?: Role;
-    storeId?: string;
-    isActive?: boolean;
-    search?: string;
-}
 
 // ========== Report API Types ==========
 

@@ -31,7 +31,7 @@ export const useExtendedCurrentUser = () => {
                 setIsLoading(true);
                 setError(null);
 
-                const response = await fetch(`/api/users/${user.id}`, {
+                const response = await fetch(`/api/auth/${user.id}`, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
                     },

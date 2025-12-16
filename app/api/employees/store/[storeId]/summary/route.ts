@@ -2,46 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-// GET store staff summary
-export async function GET(
+async function forwardRequest(
     request: NextRequest,
-    { params }: { params: Promise<{ storeId: string }> }
+    url: string,
+    method: string = 'GET',
+    body?: any
 ) {
     try {
         const token = request.headers.get('Authorization');
-        const { storeId } = await params;
 
-        // Check if storeId is undefined or invalid
-        if (!storeId || storeId === 'undefined') {
-            console.error('🔴 Store ID is missing or undefined');
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Invalid store ID',
-                    message: 'Store ID is required and must be valid'
-                },
-                { status: 400 }
-            );
-        }
+        console.log(`🟦 ${method} API Route - Forwarding to backend:`, url);
 
-        console.log('🟦 Store Staff Summary API Route - Forwarding to backend:', `${API_BASE_URL}/employees/store/${storeId}/summary`);
-
-        // Forward the request to your backend
-        const response = await fetch(`${API_BASE_URL}/employees/store/${storeId}/summary`, {
-            method: 'GET',
+        const options: RequestInit = {
+            method,
             headers: {
                 'Authorization': token || '',
                 'Content-Type': 'application/json',
             },
             cache: 'no-store',
-        });
+        };
 
+        if (body && method !== 'GET' && method !== 'HEAD') {
+            options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(url, options);
         console.log('🟦 Backend response status:', response.status);
 
-        // Get the response text first to check content type
         const responseText = await response.text();
 
-        // Check if it's HTML
         if (responseText.trim().startsWith('<!DOCTYPE') || responseText.includes('<html>')) {
             console.error('🔴 Backend returned HTML error page');
             return NextResponse.json(
@@ -54,7 +43,6 @@ export async function GET(
             );
         }
 
-        // Try to parse as JSON
         let data;
         try {
             data = JSON.parse(responseText);
@@ -70,13 +58,11 @@ export async function GET(
             );
         }
 
-        // Return the backend response with the same status code
         return NextResponse.json(data, { status: response.status });
 
     } catch (error: any) {
-        console.error('🔴 Store Staff Summary API Route Error:', error);
+        console.error('🔴 API Route Error:', error);
 
-        // Handle network errors
         if (error.code === 'ECONNREFUSED') {
             return NextResponse.json(
                 {
@@ -88,6 +74,49 @@ export async function GET(
             );
         }
 
+        return NextResponse.json(
+            {
+                success: false,
+                error: 'Internal server error',
+                message: error.message
+            },
+            { status: 500 }
+        );
+    }
+}
+
+// GET store staff summary
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ storeId: string }> }
+) {
+    try {
+        const { storeId } = await params;
+
+        if (!storeId || storeId === 'undefined') {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Invalid store ID',
+                    message: 'Store ID is required'
+                },
+                { status: 400 }
+            );
+        }
+
+        const { searchParams } = new URL(request.url);
+        const period = searchParams.get('period') || 'current';
+
+        const queryParams = new URLSearchParams();
+        queryParams.append('period', period);
+
+        const queryString = queryParams.toString();
+        const url = `${API_BASE_URL}/employees/store/${storeId}/summary${queryString ? `?${queryString}` : ''}`;
+
+        return forwardRequest(request, url, 'GET');
+
+    } catch (error: any) {
+        console.error('🔴 Store Staff Summary API Route Error:', error);
         return NextResponse.json(
             {
                 success: false,
