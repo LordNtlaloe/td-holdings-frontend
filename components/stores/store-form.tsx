@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Store, CreateStoreData, UpdateStoreData } from '@/types';
-import { storeSchema, storeUpdateSchema } from '@/lib/validation/stores';
+import { storeSchema, storeUpdateSchema } from '@/lib/validations/stores';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

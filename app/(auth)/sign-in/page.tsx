@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import {
     Form,
@@ -29,7 +29,7 @@ interface LoginFormData {
     remember: boolean;
 }
 
-export default function LoginPage() {
+function LoginContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { login, isLoading } = useAuth();
@@ -226,5 +226,20 @@ export default function LoginPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="w-[500px] max-w-md mx-auto">
+                <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <p className="mt-2 text-gray-600">Loading login...</p>
+                </div>
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     );
 }

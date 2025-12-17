@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import HeadingSmall from '@/components/general/heading-small';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { deleteUser } from '@/actions/user.actions';
 
 export default function DeleteUser({ userId }: { userId: string }) {
     const router = useRouter();
@@ -23,10 +22,19 @@ export default function DeleteUser({ userId }: { userId: string }) {
         setError(null);
 
         try {
-            const result = await deleteUser(userId);
+            // Use API route instead of server action
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ password }),
+            });
 
-            if (result?.error) {
-                throw new Error(result.error);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || data.message || 'Failed to delete account');
             }
 
             // Account deleted successfully

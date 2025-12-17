@@ -1,7 +1,7 @@
 // app/(auth)/reset-password/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import {
     Form,
@@ -29,7 +29,7 @@ interface ResetPasswordFormData {
     confirmPassword: string;
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { resetPassword, isLoading } = useAuth();
@@ -257,5 +257,21 @@ export default function ResetPasswordPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Main component with Suspense boundary
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <p className="mt-2 text-gray-600 dark:text-gray-400">Loading reset page...</p>
+                </div>
+            </div>
+        }>
+            <ResetPasswordContent />
+        </Suspense>
     );
 }

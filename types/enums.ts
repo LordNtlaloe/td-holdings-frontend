@@ -1,6 +1,6 @@
 import { LucideIcon } from "lucide-react";
 import { Config } from "ziggy-js";
-import { User } from "./models";
+import { User } from "./users";
 
 export interface BreadcrumbItem {
     title: string;
@@ -34,28 +34,6 @@ export enum Role {
     CASHIER = 'CASHIER'
 }
 
-// Product enums
-export enum ProductType {
-    TIRE = 'TIRE',
-    BALE = 'BALE'
-}
-
-export enum TireCategory {
-    NEW = 'NEW',
-    SECOND_HAND = 'SECOND_HAND'
-}
-
-export enum TireUsage {
-    FOUR_BY_FOUR = 'FOUR_BY_FOUR',
-    REGULAR = 'REGULAR',
-    TRUCK = 'TRUCK'
-}
-
-export enum ProductGrade {
-    A = 'A',
-    B = 'B',
-    C = 'C'
-}
 
 // Payment method enums
 export enum PaymentMethodType {

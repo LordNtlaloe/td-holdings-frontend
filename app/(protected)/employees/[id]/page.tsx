@@ -1,8 +1,9 @@
+// app/(protected)/employees/[id]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Employee, EmployeePerformance, PerformanceReview, EmployeeTransfer, StoreStaffSummary } from '@/types';
+import { Employee, PerformanceReview, EmployeeTransfer, StoreStaffSummary, User, Store, Role } from '@/types';
 import EmployeeAPI from '@/lib/api/employees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +32,7 @@ import {
     Mail,
     Phone,
     MapPin,
-    User,
+    User as UserIcon,
     Clock,
     Target,
     BarChart3,
@@ -53,6 +54,38 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+
+interface EmployeeWithStore extends Employee {
+    store: Store;
+    user: User;
+    performanceScore?: number;
+    hireDate: string;
+    terminationDate?: string;
+    role: Role;
+    position: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+    salary?: number;
+    _count?: {
+        sales?: number;
+        transactions?: number;
+    };
+}
+
+interface PerformanceReviewWithReviewer extends PerformanceReview {
+    reviewedBy?: {
+        user: {
+            firstName: string;
+            lastName: string;
+        };
+    };
+}
+
+interface EmployeeTransferWithStores extends EmployeeTransfer {
+    fromStore: Store;
+    toStore: Store;
+    transferredByUser?: User;
+}
+
 export default function EmployeeDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -62,10 +95,10 @@ export default function EmployeeDetailPage() {
     const employeeId = params.id as string;
     const defaultTab = searchParams.get('tab') || 'overview';
 
-    const [employee, setEmployee] = useState<Employee | null>(null);
-    const [performance, setPerformance] = useState<EmployeePerformance | null>(null);
-    const [reviews, setReviews] = useState<PerformanceReview[]>([]);
-    const [transfers, setTransfers] = useState<EmployeeTransfer[]>([]);
+    const [employee, setEmployee] = useState<EmployeeWithStore | null>(null);
+    const [performance, setPerformance] = useState<any | null>(null);
+    const [reviews, setReviews] = useState<PerformanceReviewWithReviewer[]>([]);
+    const [transfers, setTransfers] = useState<EmployeeTransferWithStores[]>([]);
     const [storeSummary, setStoreSummary] = useState<StoreStaffSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
@@ -77,17 +110,23 @@ export default function EmployeeDetailPage() {
 
         try {
             setLoading(true);
-            const [employeeData, performanceData, reviewsData, transfersData] = await Promise.all([
+            const [employeeData, reviewsData, transfersData] = await Promise.all([
                 EmployeeAPI.getEmployee(accessToken, employeeId),
-                EmployeeAPI.getEmployeePerformance(accessToken, employeeId, 'month'),
-                EmployeeAPI.getEmployeeReviews(accessToken, employeeId),
+                EmployeeAPI.getPerformanceReviews(accessToken, employeeId),
                 EmployeeAPI.getEmployeeTransfers(accessToken, employeeId),
             ]);
 
-            setEmployee(employeeData);
-            setPerformance(performanceData);
-            setReviews(reviewsData);
-            setTransfers(transfersData);
+            setEmployee(employeeData as EmployeeWithStore);
+            setReviews(reviewsData?.reviews || []);
+            setTransfers(transfersData?.transfers || []);
+
+            // Try to load performance data
+            try {
+                const performanceData = await EmployeeAPI.getEmployeePerformance(accessToken, employeeId, 'month');
+                setPerformance(performanceData);
+            } catch (error) {
+                console.warn('Could not load performance data:', error);
+            }
 
             // Load store summary if employee has a store
             if (employeeData.storeId) {
@@ -95,14 +134,14 @@ export default function EmployeeDetailPage() {
                     const summary = await EmployeeAPI.getStoreStaffSummary(accessToken, employeeData.storeId);
                     setStoreSummary(summary);
                 } catch (error) {
-                    console.error('Failed to load store summary:', error);
+                    console.warn('Failed to load store summary:', error);
                 }
             }
         } catch (error: any) {
             toast.error('Error', {
                 description: error.message || 'Failed to load employee data',
             });
-            router.push('/workforce/employees');
+            router.push('/employees');
         } finally {
             setLoading(false);
         }
@@ -131,7 +170,7 @@ export default function EmployeeDetailPage() {
         if (!accessToken || !employee) return;
 
         try {
-            await EmployeeAPI.addPerformanceReview(accessToken, employee.id, data);
+            await EmployeeAPI.createPerformanceReview(accessToken, employee.id, data);
             toast.success('Success', {
                 description: 'Performance review added successfully',
             });
@@ -187,13 +226,8 @@ export default function EmployeeDetailPage() {
         }
     };
 
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(part => part[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
+    const getInitials = (firstName: string, lastName: string) => {
+        return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
     };
 
     if (loading) {
@@ -208,26 +242,37 @@ export default function EmployeeDetailPage() {
     }
 
     if (!employee) {
-        return null;
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <p className="text-muted-foreground">Employee not found</p>
+                    <Button className="mt-4" onClick={() => router.push('/employees')}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Employees
+                    </Button>
+                </div>
+            </div>
+        );
     }
+
+    const fullName = `${employee.user.firstName} ${employee.user.lastName}`;
+    const initials = getInitials(employee.user.firstName, employee.user.lastName);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => router.push('/workforce/employees')}>
+                    <Button variant="ghost" size="sm" onClick={() => router.push('/employees')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back to Employees
                     </Button>
                     <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16">
-                            <AvatarImage src={employee.user.avatar} />
-                            <AvatarFallback>
-                                {getInitials(employee.user.firstName)}
-                            </AvatarFallback>
+                            <AvatarImage src={employee.user.avatar} alt={fullName} />
+                            <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">{employee.user.firstName}</h1>
+                            <h1 className="text-3xl font-bold tracking-tight">{fullName}</h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className={getRoleColor(employee.role)}>
                                     {employee.role}
@@ -276,7 +321,7 @@ export default function EmployeeDetailPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="overview">
-                        <User className="h-4 w-4 mr-2" />
+                        <UserIcon className="h-4 w-4 mr-2" />
                         Overview
                     </TabsTrigger>
                     <TabsTrigger value="performance">
@@ -319,7 +364,7 @@ export default function EmployeeDetailPage() {
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <Phone className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{employee.user.phone}</span>
+                                                        <span>{employee.user.phone || 'Not provided'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -359,14 +404,14 @@ export default function EmployeeDetailPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex items-center gap-2">
                                                         <Building className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{employee.store.name}</span>
-                                                        {employee.store.isMainStore && (
+                                                        <span>{employee.store?.name || 'Not assigned'}</span>
+                                                        {employee.store?.isMainStore && (
                                                             <Badge variant="outline">Main Store</Badge>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{employee.store.location}</span>
+                                                        <span>{employee.store?.location || 'No location specified'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -443,12 +488,12 @@ export default function EmployeeDetailPage() {
                                                 <div className="flex justify-between">
                                                     <span className="text-sm font-medium">Performance Score</span>
                                                     <span className="font-bold">
-                                                        {performance.metrics.salesTargetAchievement.toFixed(1)}%
+                                                        {(performance.metrics?.salesTargetAchievement || 0).toFixed(1)}%
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between text-sm text-muted-foreground">
-                                                    <span>Rank: #{performance.rankings.overallRank}</span>
-                                                    <span>of {performance.rankings.totalEmployees}</span>
+                                                    <span>Rank: #{(performance.rankings?.overallRank || 0)}</span>
+                                                    <span>of {performance.rankings?.totalEmployees || 0}</span>
                                                 </div>
                                             </div>
 
@@ -458,12 +503,12 @@ export default function EmployeeDetailPage() {
                                                 <div className="flex justify-between">
                                                     <span className="text-sm font-medium">Monthly Revenue</span>
                                                     <span className="font-bold">
-                                                        ${performance.sales.totalRevenue.toLocaleString()}
+                                                        ${(performance.sales?.totalRevenue || 0).toLocaleString()}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between text-sm text-muted-foreground">
-                                                    <span>Transactions: {performance.sales.totalTransactions}</span>
-                                                    <span>Avg: ${performance.sales.averageTransactionValue.toFixed(2)}</span>
+                                                    <span>Transactions: {performance.sales?.totalTransactions || 0}</span>
+                                                    <span>Avg: ${(performance.sales?.averageTransactionValue || 0).toFixed(2)}</span>
                                                 </div>
                                             </div>
 
@@ -477,14 +522,14 @@ export default function EmployeeDetailPage() {
                                             <Badge variant="secondary">
                                                 #{
                                                     storeSummary?.topPerformers &&
-                                                        storeSummary.topPerformers.findIndex(p => p.employeeId === employee.id) !== -1 ?
-                                                        storeSummary.topPerformers.findIndex(p => p.employeeId === employee.id) + 1 :
+                                                        storeSummary.topPerformers.findIndex((p: any) => p.employeeId === employee.id) !== -1 ?
+                                                        storeSummary.topPerformers.findIndex((p: any) => p.employeeId === employee.id) + 1 :
                                                         'N/A'
                                                 }
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
-                                            Among {storeSummary?.summary.totalEmployees || 0} store employees
+                                            Among {storeSummary?.summary?.totalEmployees || 0} store employees
                                         </p>
                                     </div>
 
@@ -503,7 +548,7 @@ export default function EmployeeDetailPage() {
                                             <div className="flex items-center gap-2">
                                                 <Award className="h-4 w-4 text-yellow-600" />
                                                 <span className="text-sm">
-                                                    Score: {reviews[0].score.toFixed(1)}%
+                                                    Score: {(reviews[0] as any).score?.toFixed(1) || '0'}%
                                                 </span>
                                             </div>
                                         )}
@@ -543,9 +588,9 @@ export default function EmployeeDetailPage() {
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="font-medium">{transfer.fromStore.name}</span>
+                                                    <span className="font-medium">{transfer.fromStore?.name}</span>
                                                     <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="font-medium">{transfer.toStore.name}</span>
+                                                    <span className="font-medium">{transfer.toStore?.name}</span>
                                                 </div>
                                                 <Badge variant="outline">
                                                     {format(new Date(transfer.transferDate), 'MMM d, yyyy')}
@@ -556,7 +601,7 @@ export default function EmployeeDetailPage() {
                                             </p>
                                             <div className="flex items-center justify-between text-sm">
                                                 <span>
-                                                    Transferred by: {transfer.transferredByUser.firstName}
+                                                    Transferred by: {transfer.transferredByUser?.firstName || 'Unknown'}
                                                 </span>
                                                 <span className="text-muted-foreground">
                                                     {format(new Date(transfer.transferDate), 'PPpp')}
@@ -594,7 +639,7 @@ export default function EmployeeDetailPage() {
                                             {format(new Date(employee.hireDate), 'MMMM d, yyyy')}
                                         </div>
                                         <p className="text-sm mt-1">
-                                            Started as {employee.position} at {employee.store.name}
+                                            Started as {employee.position} at {employee.store?.name || 'Unknown Store'}
                                         </p>
                                     </div>
                                 </div>
@@ -639,7 +684,7 @@ export default function EmployeeDetailPage() {
                                 <DialogHeader>
                                     <DialogTitle>Add Performance Review</DialogTitle>
                                     <DialogDescription>
-                                        Record a performance review for {employee.user.lastName}
+                                        Record a performance review for {fullName}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <EmployeeForm
@@ -661,62 +706,66 @@ export default function EmployeeDetailPage() {
                                             <div>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Award className="h-5 w-5 text-yellow-600" />
-                                                    {review.period} Review
+                                                    {(review as any).period || 'Performance'} Review
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Reviewed by {review.reviewedBy.user.firstName} • {format(new Date(review.createdAt), 'MMMM d, yyyy')}
+                                                    Reviewed by {review.reviewedBy?.user?.firstName || 'Unknown'} • {format(new Date(review.createdAt), 'MMMM d, yyyy')}
                                                 </CardDescription>
                                             </div>
                                             <Badge variant="outline" className="text-lg font-bold">
-                                                {review.score.toFixed(1)}%
+                                                {(review as any).score?.toFixed(1) || '0'}%
                                             </Badge>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div>
                                             <h4 className="text-sm font-medium mb-2">Feedback</h4>
-                                            <p className="text-sm">{review.feedback}</p>
+                                            <p className="text-sm">{(review as any).feedback || 'No feedback provided'}</p>
                                         </div>
 
-                                        <div className="grid gap-4 md:grid-cols-2">
-                                            <div>
-                                                <h4 className="text-sm font-medium mb-2">Strengths</h4>
-                                                <ul className="space-y-1">
-                                                    {review.strengths.map((strength, index) => (
-                                                        <li key={index} className="text-sm flex items-start gap-2">
-                                                            <div className="h-1.5 w-1.5 rounded-full bg-green-500 mt-1.5"></div>
-                                                            {strength}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-
-                                            {review.areasForImprovement && review.areasForImprovement.length > 0 && (
+                                        {(review as any).strengths?.length > 0 && (
+                                            <div className="grid gap-4 md:grid-cols-2">
                                                 <div>
-                                                    <h4 className="text-sm font-medium mb-2">Areas for Improvement</h4>
+                                                    <h4 className="text-sm font-medium mb-2">Strengths</h4>
                                                     <ul className="space-y-1">
-                                                        {review.areasForImprovement.map((area, index) => (
+                                                        {(review as any).strengths.map((strength: string, index: number) => (
                                                             <li key={index} className="text-sm flex items-start gap-2">
-                                                                <div className="h-1.5 w-1.5 rounded-full bg-yellow-500 mt-1.5"></div>
-                                                                {area}
+                                                                <div className="h-1.5 w-1.5 rounded-full bg-green-500 mt-1.5"></div>
+                                                                {strength}
                                                             </li>
                                                         ))}
                                                     </ul>
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        <div>
-                                            <h4 className="text-sm font-medium mb-2">Goals for Next Period</h4>
-                                            <ul className="space-y-1">
-                                                {review.goals.map((goal, index) => (
-                                                    <li key={index} className="text-sm flex items-start gap-2">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5"></div>
-                                                        {goal}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
+                                                {(review as any).areasForImprovement?.length > 0 && (
+                                                    <div>
+                                                        <h4 className="text-sm font-medium mb-2">Areas for Improvement</h4>
+                                                        <ul className="space-y-1">
+                                                            {(review as any).areasForImprovement.map((area: string, index: number) => (
+                                                                <li key={index} className="text-sm flex items-start gap-2">
+                                                                    <div className="h-1.5 w-1.5 rounded-full bg-yellow-500 mt-1.5"></div>
+                                                                    {area}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {(review as any).goals?.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-medium mb-2">Goals for Next Period</h4>
+                                                <ul className="space-y-1">
+                                                    {(review as any).goals.map((goal: string, index: number) => (
+                                                        <li key={index} className="text-sm flex items-start gap-2">
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5"></div>
+                                                            {goal}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             ))}
@@ -737,7 +786,7 @@ export default function EmployeeDetailPage() {
                             <CardHeader>
                                 <CardTitle>Store Context</CardTitle>
                                 <CardDescription>
-                                    {employee.store.name} • {storeSummary.summary.totalEmployees} employees
+                                    {employee.store?.name || 'Unknown Store'} • {storeSummary.summary?.totalEmployees || 0} employees
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -746,10 +795,10 @@ export default function EmployeeDetailPage() {
                                         <div className="space-y-2">
                                             <p className="text-sm font-medium">Store Rank</p>
                                             <div className="text-3xl font-bold">
-                                                #{storeSummary.topPerformers.findIndex(p => p.employeeId === employee.id) + 1 || 'N/A'}
+                                                #{storeSummary.topPerformers?.findIndex((p: any) => p.employeeId === employee.id) + 1 || 'N/A'}
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                Among {storeSummary.topPerformers.length} top performers
+                                                Among {storeSummary.topPerformers?.length || 0} top performers
                                             </p>
                                         </div>
 
@@ -757,7 +806,7 @@ export default function EmployeeDetailPage() {
                                             <p className="text-sm font-medium">Performance Percentile</p>
                                             <div className="text-3xl font-bold">
                                                 {employee.performanceScore ?
-                                                    `${Math.round((1 - (storeSummary.topPerformers.findIndex(p => p.employeeId === employee.id) / storeSummary.topPerformers.length)) * 100)}%` :
+                                                    `${Math.round((1 - ((storeSummary.topPerformers?.findIndex((p: any) => p.employeeId === employee.id) || 0) / (storeSummary.topPerformers?.length || 1))) * 100)}%` :
                                                     'N/A'}
                                             </div>
                                             <p className="text-xs text-muted-foreground">
@@ -768,7 +817,7 @@ export default function EmployeeDetailPage() {
                                         <div className="space-y-2">
                                             <p className="text-sm font-medium">Same Role Employees</p>
                                             <div className="text-3xl font-bold">
-                                                {storeSummary.byRole.find(r => r.role === employee.role)?.count || 0}
+                                                {storeSummary.byRole?.find((r: any) => r.role === employee.role)?.count || 0}
                                             </div>
                                             <p className="text-xs text-muted-foreground">
                                                 Employees with {employee.role} role
@@ -778,7 +827,7 @@ export default function EmployeeDetailPage() {
                                         <div className="space-y-2">
                                             <p className="text-sm font-medium">Same Position</p>
                                             <div className="text-3xl font-bold">
-                                                {storeSummary.byPosition.find(p => p.position === employee.position)?.count || 1}
+                                                {storeSummary.byPosition?.find((p: any) => p.position === employee.position)?.count || 1}
                                             </div>
                                             <p className="text-xs text-muted-foreground">
                                                 Employees with same position
@@ -786,27 +835,29 @@ export default function EmployeeDetailPage() {
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t">
-                                        <h4 className="text-sm font-medium mb-3">Store Performance Distribution</h4>
-                                        <div className="space-y-2">
-                                            {storeSummary.performanceDistribution.map((dist) => (
-                                                <div key={dist.range} className="flex items-center justify-between">
-                                                    <span className="text-sm">{dist.range}%</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-48 bg-secondary rounded-full h-2">
-                                                            <div
-                                                                className="bg-primary h-2 rounded-full"
-                                                                style={{ width: `${dist.percentage}%` }}
-                                                            ></div>
+                                    {storeSummary.performanceDistribution?.length > 0 && (
+                                        <div className="pt-4 border-t">
+                                            <h4 className="text-sm font-medium mb-3">Store Performance Distribution</h4>
+                                            <div className="space-y-2">
+                                                {storeSummary.performanceDistribution.map((dist: any) => (
+                                                    <div key={dist.range} className="flex items-center justify-between">
+                                                        <span className="text-sm">{dist.range}%</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-48 bg-secondary rounded-full h-2">
+                                                                <div
+                                                                    className="bg-primary h-2 rounded-full"
+                                                                    style={{ width: `${dist.percentage}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className="text-sm font-medium w-10">
+                                                                {dist.count} ({dist.percentage}%)
+                                                            </span>
                                                         </div>
-                                                        <span className="text-sm font-medium w-10">
-                                                            {dist.count} ({dist.percentage}%)
-                                                        </span>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

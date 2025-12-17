@@ -1,3 +1,4 @@
+// app/api/auth/sessions/[tokenId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
@@ -5,10 +6,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/a
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { tokenId: string } }
+    { params }: { params: Promise<{ tokenId: string }> }
 ) {
     try {
-        const { tokenId } = params;
+        // Await the params Promise
+        const { tokenId } = await params;
         const cookieStore = await cookies();
         const accessToken = cookieStore.get('accessToken')?.value;
 

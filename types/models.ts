@@ -1,15 +1,12 @@
 import { Employee } from './employees';
 import {
     Role,
-    ProductType,
-    TireCategory,
-    TireUsage,
-    ProductGrade,
     PaymentMethodType,
     TransferStatus,
     InventoryChangeType,
     SortOrder
 } from './enums';
+import { ProductType, ProductGrade, TireCategory, TireUsage, StoreProduct, Product } from './products';
 
 import { Store } from './stores';
 import { User } from './users';
@@ -70,36 +67,6 @@ export interface PasswordReset {
     user: User;
 }
 
-
-// ========== Product ==========
-
-export interface Product extends BaseModel {
-    name: string;
-    basePrice: number;
-    type: ProductType;
-    grade: ProductGrade;
-    commodity: string | null;
-
-    // Tire-specific fields
-    tireCategory: TireCategory | null;
-    tireUsage: TireUsage | null;
-    tireSize: string | null;
-    loadIndex: string | null;
-    speedRating: string | null;
-    warrantyPeriod: string | null;
-
-    // Bale-specific fields
-    baleWeight: number | null;
-    baleCategory: string | null;
-    originCountry: string | null;
-    importDate: Date | null;
-
-    // Relationships
-    inventories?: Inventory[];
-    saleItems?: SaleItem[];
-    transfers?: ProductTransfer[];
-    storeProducts?: StoreProduct[];
-}
 
 // ========== Inventory ==========
 
@@ -166,18 +133,6 @@ export interface InventoryHistory {
     user: User;
 }
 
-// ========== Store Product ==========
-
-export interface StoreProduct {
-    id: string;
-    productId: string;
-    storeId: string;
-    createdAt: Date;
-
-    // Relationships
-    product: Product;
-    store: Store;
-}
 
 // ========== Sales ==========
 

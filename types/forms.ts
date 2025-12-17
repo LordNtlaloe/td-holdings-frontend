@@ -1,11 +1,8 @@
 import {
     Role,
-    ProductType,
-    TireCategory,
-    TireUsage,
-    ProductGrade,
     PaymentMethodType
 } from './enums';
+import { ProductType, ProductGrade, TireCategory, TireUsage } from './products';
 
 // ========== Auth Forms ==========
 

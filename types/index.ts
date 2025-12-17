@@ -6,3 +6,4 @@ export * from './forms';
 export * from './stores';
 export * from './employees'
 export * from './users'
+export * from './products'

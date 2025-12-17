@@ -202,12 +202,6 @@ export function EmployeeCard({
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
                                 <span>Hired {format(new Date(employee.hireDate), 'MMM yyyy')}</span>
                             </div>
-                            {employee.salary && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                    <span>${employee.salary.toLocaleString()}/month</span>
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -221,7 +215,7 @@ export function EmployeeCard({
                             </div>
                             <div className="text-center">
                                 <div className="font-semibold">
-                                    {employee._count.transactions || 0}
+                                    {employee._count.sales || 0}
                                 </div>
                                 <p className="text-xs text-muted-foreground">Transactions</p>
                             </div>

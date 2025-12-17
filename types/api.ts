@@ -1,11 +1,11 @@
-import { Role, ProductType, TransferStatus, PaymentMethodType } from './enums';
+import { Role, TransferStatus, PaymentMethodType } from './enums';
 import {
-    Product,
     Inventory,
     ProductTransfer,
     Sale,
     ActivityLog,
 } from './models';
+import { ProductType } from './products';
 import { PaginatedResponse } from './stores';
 
 // ========== Auth API Types ==========
@@ -66,15 +66,6 @@ export interface UpdateProductRequest {
     baleCategory?: string;
     originCountry?: string;
     importDate?: Date;
-}
-
-export interface ProductFilters {
-    search?: string;
-    type?: ProductType;
-    grade?: string;
-    tireCategory?: string;
-    tireUsage?: string;
-    baleCategory?: string;
 }
 
 // ========== Inventory API Types ==========

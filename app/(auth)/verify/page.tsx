@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import {
     Form,
@@ -26,7 +26,7 @@ interface VerifyFormData {
     code: string;
 }
 
-export default function VerifyPage() {
+function VerifyContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { verifyAccount, isLoading } = useAuth();
@@ -235,5 +235,20 @@ export default function VerifyPage() {
                 </TextLink>
             </div>
         </div>
+    );
+}
+
+export default function VerifyPage() {
+    return (
+        <Suspense fallback={
+            <div className="w-[500px] max-w-md mx-auto">
+                <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <p className="mt-2 text-gray-600">Loading verification...</p>
+                </div>
+            </div>
+        }>
+            <VerifyContent />
+        </Suspense>
     );
 }

@@ -1,9 +1,15 @@
-import { Role } from "./enums";
+import { Role } from "./enums"; 
 import { Sale } from "./models";
 import { Store } from "./stores";
 import { User } from "./users";
 
-// Employee Types
+// ============ CORE TYPES ============
+
+export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+export type ReviewPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+// ============ EMPLOYEE TYPES ============
+
 export interface Employee {
     id: string;
     userId: string;
@@ -14,12 +20,12 @@ export interface Employee {
     role: Role;
     hireDate: string;
     terminationDate?: string;
-    performanceScore?: number; // Calculated field, not in DB
+    performanceScore?: number;
     createdBy: string;
     createdById: string;
     createdAt: string;
     updatedAt: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+    status: EmployeeStatus;
     _count?: {
         sales?: number;
         transfers?: number;
@@ -27,8 +33,8 @@ export interface Employee {
     };
     transfers?: EmployeeTransfer[];
     performanceReviews?: PerformanceReview[];
-    sales?: Sale[]; // For performance data
-    createdByUser?: User; // Reference to the user who created this employee
+    sales?: Sale[];
+    createdByUser?: User;
 }
 
 export interface EmployeeTransfer {
@@ -38,8 +44,8 @@ export interface EmployeeTransfer {
     fromStoreId: string;
     toStoreId: string;
     reason: string;
-    transferredBy: string;
-    transferredByUser: User;
+    transferredBy?: User;
+    transferredByUser?: User;
     transferDate: string;
     fromStore: Store;
     toStore: Store;
@@ -51,7 +57,7 @@ export interface PerformanceReview {
     employee: Employee;
     reviewerId: string;
     reviewer: User;
-    period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+    period: ReviewPeriod;
     score: number;
     feedback?: string;
     goals: string[];
@@ -60,68 +66,14 @@ export interface PerformanceReview {
     createdAt: string;
 }
 
-// export interface Sale {
-//     id: string;
-//     employeeId: string;
-//     storeId: string;
-//     total: number;
-//     subtotal: number;
-//     tax: number;
-//     createdAt: string;
-//     paymentMethod: 'MOBILE' | 'CASH' | 'CARD';
-//     customerName?: string;
-//     customerEmail?: string;
-//     customerPhone?: string;
-//     saleItems?: SaleItem[];
-// }
+// ============ FORM VALUE TYPES ============
 
-// export interface SaleItem {
-//     id: string;
-//     saleId: string;
-//     productId: string;
-//     productName: string;
-//     quantity: number;
-//     price: number;
-// }
-
-// For API request/response data
-export interface CreateEmployeeData {
-    userId: string;
-    storeId: string;
-    position: string;
-    role: Role;
-    hireDate?: string; // Optional, defaults to now
-}
-
-export interface UpdateEmployeeData {
-    position?: string;
-    role?: Role;
-    status?: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
-    terminationDate?: string;
-}
-
-export interface TransferEmployeeData {
-    newStoreId: string;
-    reason: string;
-}
-
-export interface PerformanceReviewData {
-    period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
-    score: number;
-    feedback?: string;
-    goals: string[];
-    strengths: string[];
-    areasForImprovement: string[];
-}
-
-// For form values (with explicit undefined for discriminated union)
 export interface CreateEmployeeFormValues {
     userId: string;
     storeId: string;
     position: string;
     role: Role;
     hireDate: string;
-    // Explicit undefined for other forms
     newStoreId?: undefined;
     reason?: undefined;
     period?: undefined;
@@ -137,9 +89,8 @@ export interface CreateEmployeeFormValues {
 export interface EditEmployeeFormValues {
     position: string;
     role: Role;
-    status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+    status: EmployeeStatus;
     terminationDate?: string;
-    // Explicit undefined for other forms
     userId?: undefined;
     storeId?: undefined;
     hireDate?: undefined;
@@ -156,7 +107,6 @@ export interface EditEmployeeFormValues {
 export interface TransferEmployeeFormValues {
     newStoreId: string;
     reason: string;
-    // Explicit undefined for other forms
     userId?: undefined;
     storeId?: undefined;
     position?: undefined;
@@ -173,13 +123,12 @@ export interface TransferEmployeeFormValues {
 }
 
 export interface PerformanceReviewFormValues {
-    period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+    period: ReviewPeriod;
     score: number;
     feedback?: string;
     goals: string[];
     strengths: string[];
     areasForImprovement: string[];
-    // Explicit undefined for other forms
     userId?: undefined;
     storeId?: undefined;
     position?: undefined;
@@ -197,34 +146,40 @@ export type EmployeeFormValues =
     | TransferEmployeeFormValues
     | PerformanceReviewFormValues;
 
-// Employee performance report interface
-export interface EmployeePerformanceReport {
-    employee: Employee;
-    period: 'day' | 'week' | 'month' | 'year';
-    sales: {
-        revenue: number;
-        transactions: number;
-        averageTransaction: number;
-        bestSellingProducts: Array<{
-            productId: string;
-            productName: string;
-            quantity: number;
-            revenue: number;
-        }>;
-        salesByHour?: Array<{
-            hour: number;
-            sales: number;
-            revenue: number;
-        }>;
-    };
-    comparison?: {
-        storeAverage: number;
-        employeeRank: number;
-        topPerformer: { name: string; revenue: number };
-    };
+// ============ RESPONSE TYPES ============
+
+export interface PaginatedEmployeesResponse {
+    employees: Employee[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
 }
 
-// Store staff summary
+export interface EmployeeStats {
+    totalEmployees: number;
+    activeEmployees: number;
+    onLeave: number;
+    terminated: number;
+    averagePerformanceScore: number;
+    turnoverRate: number;
+    byRole: Array<{
+        role: string;
+        count: number;
+        percentage: number;
+    }>;
+    byStore: Array<{
+        storeId: string;
+        storeName: string;
+        count: number;
+        percentage: number;
+    }>;
+    recentHires: number;
+    upcomingReviews: number;
+}
+
 export interface StoreStaffSummary {
     storeId: string;
     storeName: string;
@@ -234,7 +189,7 @@ export interface StoreStaffSummary {
         activeEmployees: number;
         onLeave: number;
         terminated: number;
-        averageTenure: number; // in months
+        averageTenure: number;
         averagePerformanceScore: number;
     };
     byRole: Array<{
@@ -275,46 +230,39 @@ export interface StoreStaffSummary {
     };
 }
 
-// Employee statistics
-export interface EmployeeStats {
-    totalEmployees: number;
-    activeEmployees: number;
-    onLeave: number;
-    terminated: number;
-    averagePerformanceScore: number;
-    turnoverRate: number;
-    byRole: Array<{
-        role: string;
-        count: number;
-        percentage: number;
-    }>;
-    byStore: Array<{
-        storeId: string;
-        storeName: string;
-        count: number;
-        percentage: number;
-    }>;
-    recentHires: number;
-    upcomingReviews: number;
+export interface EmployeePerformanceReport {
+    employee: Employee;
+    period: 'day' | 'week' | 'month' | 'year';
+    sales: {
+        revenue: number;
+        transactions: number;
+        averageTransaction: number;
+        bestSellingProducts: Array<{
+            productId: string;
+            productName: string;
+            quantity: number;
+            revenue: number;
+        }>;
+        salesByHour?: Array<{
+            hour: number;
+            sales: number;
+            revenue: number;
+        }>;
+    };
+    comparison?: {
+        storeAverage: number;
+        employeeRank: number;
+        topPerformer: { name: string; revenue: number };
+    };
 }
 
-// Paginated response
-export interface PaginatedEmployeesResponse {
-    employees: Employee[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-}
+// ============ FILTER & QUERY TYPES ============
 
-// Filters for employee queries
 export interface EmployeeFilters {
     storeId?: string;
     role?: Role;
     position?: string;
-    status?: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+    status?: EmployeeStatus;
     search?: string;
     activeOnly?: boolean;
     page?: number;
@@ -323,7 +271,39 @@ export interface EmployeeFilters {
     sortOrder?: 'asc' | 'desc';
 }
 
-// Paginated transfers response
+// ============ API DATA TYPES ============
+
+export interface CreateEmployeeData {
+    userId: string;
+    storeId: string;
+    position: string;
+    role: Role;
+    hireDate?: string;
+}
+
+export interface UpdateEmployeeData {
+    position?: string;
+    role?: Role;
+    status?: EmployeeStatus;
+    terminationDate?: string;
+}
+
+export interface TransferEmployeeData {
+    newStoreId: string;
+    reason: string;
+}
+
+export interface PerformanceReviewData {
+    period: ReviewPeriod;
+    score: number;
+    feedback?: string;
+    goals: string[];
+    strengths: string[];
+    areasForImprovement: string[];
+}
+
+// ============ OTHER RESPONSE TYPES ============
+
 export interface PaginatedTransfersResponse {
     transfers: EmployeeTransfer[];
     total: number;
@@ -331,7 +311,6 @@ export interface PaginatedTransfersResponse {
     totalPages: number;
 }
 
-// Paginated reviews response
 export interface PaginatedReviewsResponse {
     reviews: PerformanceReview[];
     averageScore: number;
@@ -340,7 +319,6 @@ export interface PaginatedReviewsResponse {
     totalPages: number;
 }
 
-// Transfer response from API
 export interface TransferEmployeeResponse {
     employee: Employee;
     transfer: EmployeeTransfer;
@@ -348,13 +326,13 @@ export interface TransferEmployeeResponse {
     newStore: Store;
 }
 
-// Performance review response from API
 export interface PerformanceReviewResponse {
     review: PerformanceReview;
     employee: Employee;
 }
 
-// Helper types for dropdowns and selectors
+// ============ OPTION/HELPER TYPES ============
+
 export interface EmployeeOption {
     id: string;
     label: string;
@@ -365,7 +343,7 @@ export interface EmployeeOption {
 }
 
 export interface EmployeeStatusOption {
-    value: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+    value: EmployeeStatus;
     label: string;
     color: string;
 }
@@ -376,7 +354,8 @@ export interface RoleOption {
     description: string;
 }
 
-// Employee export data
+// ============ EXPORT & UTILITY TYPES ============
+
 export interface EmployeeExportData {
     id: string;
     name: string;
@@ -394,7 +373,6 @@ export interface EmployeeExportData {
     reviewCount?: number;
 }
 
-// Employee creation/update validation result
 export interface EmployeeValidationResult {
     isValid: boolean;
     errors: string[];
