@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { BreadcrumbItem } from "@/types";
 import { AuthProvider } from "@/contexts/auth-context";
 import AppLayoutTemplate from "@/layouts/app/app-sidebar-layout";
+import { PosProvider } from "@/contexts/cart-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,9 +32,9 @@ export default function RootLayout({ children, breadcrumbs }: AppLayoutProps) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          {/* <AppLayoutTemplate breadcrumbs={breadcrumbs}> */}
+          <PosProvider>
             {children}
-          {/* </AppLayoutTemplate> */}
+          </PosProvider>
         </AuthProvider>
       </body>
     </html>

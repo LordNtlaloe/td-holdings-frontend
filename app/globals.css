@@ -123,3 +123,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* In your global.css */
+.dialog-max-wide {
+    max-width: 95vw !important;
+    width: 95vw !important;
+}
+
+@media (min-width: 1200px) {
+    .dialog-max-wide {
+        max-width: 1200px !important;
+        width: 1200px !important;
+    }
+}

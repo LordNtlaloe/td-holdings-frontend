@@ -41,15 +41,21 @@ class StoreAPI {
     }
 
     // Authenticated endpoints
-    static async getStores(token: string, params?: StoreFilters): Promise<PaginatedStoresResponse> {
+    // In StoreAPI class, fix the getStores method:
+    static async getStores(token: string, params?: any): Promise<PaginatedStoresResponse> {
         const query = new URLSearchParams();
-        if (params?.isMainStore !== undefined) query.append('isMainStore', params.isMainStore.toString());
+
         if (params?.search) query.append('search', params.search);
+        if (params?.isMainStore !== undefined) query.append('isMainStore', params.isMainStore.toString());
         if (params?.page) query.append('page', params.page.toString());
         if (params?.limit) query.append('limit', params.limit.toString());
+        if (params?.sortBy) query.append('sortBy', params.sortBy);
+        if (params?.sortOrder) query.append('sortOrder', params.sortOrder);
 
-        return this.fetchAPI(`/stores?${query.toString()}`, {
+        const queryString = query.toString();
+        return this.fetchAPI(`/stores${queryString ? `?${queryString}` : ''}`, {
             headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
         });
     }
 
@@ -99,6 +105,8 @@ class StoreAPI {
             headers: { Authorization: `Bearer ${token}` },
         });
     }
+
+
 }
 
 export default StoreAPI;

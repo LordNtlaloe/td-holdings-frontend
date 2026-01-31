@@ -1,6 +1,5 @@
 import {
     Employee,
-    StoreStaffSummary,
     EmployeeFilters,
     PaginatedEmployeesResponse,
     EmployeeStats,
@@ -9,7 +8,7 @@ import {
     User,
     PerformanceReviewFormValues,
     CreateEmployeeFormValues,
-    EditEmployeeFormValues,
+    UpdateEmployeeFormValues,
     TransferEmployeeFormValues
 } from '@/types';
 
@@ -75,7 +74,7 @@ class EmployeeAPI {
         });
     }
 
-    static async updateEmployee(token: string, employeeId: string, data: EditEmployeeFormValues): Promise<Employee> {
+    static async updateEmployee(token: string, employeeId: string, data: UpdateEmployeeFormValues): Promise<Employee> {
         return this.fetchAPI(`/employees/${employeeId}`, {
             method: 'PUT',
             body: JSON.stringify(data),
@@ -210,7 +209,7 @@ class EmployeeAPI {
         token: string,
         storeId: string,
         period: 'current' | 'month' | 'quarter' | 'year' = 'current'
-    ): Promise<StoreStaffSummary> {
+    ): Promise<any> { // Change return type to any or create proper type
         const query = new URLSearchParams();
         query.append('period', period);
 

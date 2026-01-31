@@ -12,7 +12,7 @@ export async function GET(
 
         console.log('🟦 Store Inventory Summary API Route - Forwarding to backend:', `${API_BASE_URL}/stores/${storeId}/inventory-summary`);
 
-        const response = await fetch(`${API_BASE_URL}/stores/${storeId}/inventory-summary`, {
+        const response = await fetch(`${API_BASE_URL}/products/${storeId}/summary`, {
             method: 'GET',
             headers: {
                 'Authorization': token || '',

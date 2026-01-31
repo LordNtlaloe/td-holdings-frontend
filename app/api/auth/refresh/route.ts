@@ -5,36 +5,57 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/a
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const userAgent = request.headers.get('user-agent') || '';
+        const { refreshToken } = body;
 
-        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        if (!refreshToken) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Refresh token required',
+                    message: 'No refresh token provided'
+                },
+                { status: 400 }
+            );
+        }
+
+        console.log('🟡 Refresh Token API Route - Forwarding to backend');
+
+        const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'User-Agent': userAgent,
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify({ refreshToken }),
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data;
 
-        if (!response.ok) {
-            return NextResponse.json(data, { status: response.status });
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('🔴 Failed to parse response:', responseText);
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Invalid response',
+                    message: 'Backend returned invalid JSON'
+                },
+                { status: 502 }
+            );
         }
 
-        return NextResponse.json(data);
-    } catch (error) {
-        console.error('Refresh token API error:', error);
+        return NextResponse.json(data, { status: response.status });
+
+    } catch (error: any) {
+        console.error('🔴 Refresh Token API Route Error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            {
+                success: false,
+                error: 'Internal server error',
+                message: error.message
+            },
             { status: 500 }
         );
     }
-}
-
-export async function GET() {
-    return NextResponse.json(
-        { error: 'Method not allowed' },
-        { status: 405 }
-    );
 }

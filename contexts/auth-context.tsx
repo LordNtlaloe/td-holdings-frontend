@@ -1,6 +1,7 @@
+// context/auth-context.tsx
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
     User,
@@ -27,7 +28,7 @@ interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     register: (userData: RegisterRequest) => Promise<void>;
-    refreshAccessToken: () => Promise<void>;
+    refreshAccessToken: () => Promise<boolean>;
     verifyAccount: (email: string, code: string) => Promise<void>;
     requestPasswordReset: (email: string) => Promise<void>;
     resetPassword: (email: string, resetToken: string, newPassword: string) => Promise<void>;
@@ -40,11 +41,11 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Role-based route permissions based on your backend routes
+// Role-based route permissions
 const routePermissions: Record<Role, string[]> = {
     [Role.ADMIN]: [
         '/dashboard',
-        '/dashboard/*',  // Allow all dashboard subroutes for admin
+        '/dashboard/*',
         '/users',
         '/users/*',
         '/employees',
@@ -60,11 +61,12 @@ const routePermissions: Record<Role, string[]> = {
         '/sales',
         '/sales/*',
         '/reports',
-        '/reports/*'
+        '/reports/*',
+        '/store-locations'
     ],
     [Role.MANAGER]: [
         '/dashboard',
-        '/dashboard/*',  // Allow all dashboard subroutes for manager
+        '/dashboard/*',
         '/branches',
         '/branches/*',
         '/products',
@@ -80,7 +82,7 @@ const routePermissions: Record<Role, string[]> = {
     ],
     [Role.CASHIER]: [
         '/dashboard',
-        '/dashboard/*',  // Allow all dashboard subroutes for cashier
+        '/dashboard/*',
         '/products',
         '/products/*',
         '/inventory',
@@ -89,32 +91,34 @@ const routePermissions: Record<Role, string[]> = {
         '/sales/*',
         '/customers',
         '/customers/*'
-    ]
+    ],
 };
 
-// All roles that can access the system
 const SYSTEM_ROLES: Role[] = [Role.ADMIN, Role.MANAGER, Role.CASHIER];
 
-// Public routes that don't require authentication
 const PUBLIC_ROUTES = [
     '/sign-in',
     '/sign-up',
     '/verify',
     '/forgot-password',
-    '/reset-password'
+    '/reset-password',
+    '/store-locations'
 ];
 
-// Safe function to get allowed routes with fallback
+const STORAGE_KEYS = {
+    ACCESS_TOKEN: 'inventory_accessToken',
+    REFRESH_TOKEN: 'inventory_refreshToken',
+    USER: 'inventory_user'
+};
+
 const getAllowedRoutes = (role: Role): string[] => {
     return routePermissions[role] || ['/dashboard'];
 };
 
-// Validate if a role is a valid system role
 const isValidSystemRole = (role: string): role is Role => {
     return SYSTEM_ROLES.includes(role.toUpperCase() as Role);
 };
 
-// Normalize role to ensure consistent casing
 const normalizeUserRole = (role: string): Role => {
     const normalizedRole = role.toUpperCase() as Role;
     if (isValidSystemRole(normalizedRole)) {
@@ -123,11 +127,40 @@ const normalizeUserRole = (role: string): Role => {
     throw new Error('Invalid user role');
 };
 
-// Store keys for localStorage
-const STORAGE_KEYS = {
-    ACCESS_TOKEN: 'inventory_accessToken',
-    REFRESH_TOKEN: 'inventory_refreshToken',
-    USER: 'inventory_user'
+const safeParseDate = (dateString: string | Date | null | undefined): string | undefined => {
+    if (!dateString) return undefined;
+    if (typeof dateString === 'string') return dateString;
+    if (dateString instanceof Date) return dateString.toISOString();
+    return undefined;
+};
+
+// Check if token is expired
+const isTokenExpired = (token: string): boolean => {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            console.warn('Invalid JWT format');
+            return true;
+        }
+
+        const payload = JSON.parse(atob(parts[1]));
+
+        if (!payload.exp) {
+            console.warn('Token has no expiration');
+            return true;
+        }
+
+        const expirationTime = payload.exp * 1000;
+        const currentTime = Date.now();
+
+        // Add 5 minute buffer to refresh before actual expiration
+        const bufferTime = 5 * 60 * 1000;
+
+        return currentTime >= (expirationTime - bufferTime);
+    } catch (error) {
+        console.error('Error parsing token:', error);
+        return true;
+    }
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -141,114 +174,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const router = useRouter();
     const pathname = usePathname();
+    const isRefreshingRef = useRef(false);
+    const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Safe route permission check
     const hasRoutePermission = (user: User | null, path: string): boolean => {
         if (!user) return false;
-
-        // Allow access to public routes for all authenticated users
         if (PUBLIC_ROUTES.some(route => path.startsWith(route))) {
             return true;
         }
-
-        // Allow access to dashboard home for all authenticated users
         if (path === '/dashboard') {
             return true;
         }
-
         const allowedRoutes = getAllowedRoutes(user.role);
         return allowedRoutes.some(route =>
             path === route || path.startsWith(route + '/')
         );
     };
 
-    // Check if route is public
     const isPublicRoute = (path: string): boolean => {
         return PUBLIC_ROUTES.some(route => path.startsWith(route));
     };
 
-    // Initialize auth state from localStorage with validation
-    useEffect(() => {
-        const initializeAuth = async () => {
-            try {
-                const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-                const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-                const userData = localStorage.getItem(STORAGE_KEYS.USER);
+    // Clear auth function
+    const clearAuth = () => {
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
 
-                if (accessToken && refreshToken && userData) {
-                    const user = JSON.parse(userData) as User;
-
-                    // Validate user data structure
-                    if (user && user.id && user.email && user.role) {
-                        try {
-                            const normalizedUser: User = {
-                                ...user,
-                                role: normalizeUserRole(user.role),
-                                lastLogin: user.lastLogin ? new Date(user.lastLogin) : null,
-                                createdAt: new Date(user.createdAt),
-                                updatedAt: new Date(user.updatedAt)
-                            };
-
-                            setAuthState({
-                                user: normalizedUser,
-                                accessToken,
-                                refreshToken,
-                                isLoading: false,
-                                isAuthenticated: true,
-                            });
-                        } catch (roleError) {
-                            console.warn('Invalid user role detected, clearing auth:', roleError);
-                            await logout();
-                        }
-                    } else {
-                        console.warn('Invalid user data in localStorage, clearing auth');
-                        await logout();
-                    }
-                } else {
-                    setAuthState(prev => ({ ...prev, isLoading: false }));
-                }
-            } catch (error) {
-                console.error('Auth initialization error:', error);
-                await logout();
-            }
-        };
-
-        initializeAuth();
-    }, []);
-
-    // Route protection with safe checks
-    useEffect(() => {
-        if (authState.isLoading) return;
-        if (!pathname) return;
-
-        if (authState.isAuthenticated && authState.user) {
-            // Redirect to dashboard if trying to access auth pages while logged in
-            if (isPublicRoute(pathname)) {
-                router.push('/dashboard');
-                return;
-            }
-
-            // Check route permissions for protected routes
-            if (!hasRoutePermission(authState.user, pathname)) {
-                console.warn(`User ${authState.user.role} attempted to access unauthorized route: ${pathname}`);
-                router.push('/dashboard');
-                return;
-            }
-        } else {
-            // Redirect to login if trying to access protected routes while not authenticated
-            if (!isPublicRoute(pathname) && pathname.startsWith('/dashboard')) {
-                router.push('/sign-in');
-                return;
-            }
+        if (refreshTimeoutRef.current) {
+            clearTimeout(refreshTimeoutRef.current);
+            refreshTimeoutRef.current = null;
         }
-    }, [authState.isAuthenticated, authState.isLoading, authState.user, pathname, router]);
 
-    const refreshAccessToken = async (): Promise<void> => {
+        setAuthState({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            isLoading: false,
+            isAuthenticated: false,
+        });
+        isRefreshingRef.current = false;
+    };
+
+    // Schedule automatic token refresh
+    const scheduleTokenRefresh = (token: string) => {
+        if (refreshTimeoutRef.current) {
+            clearTimeout(refreshTimeoutRef.current);
+        }
+
         try {
+            const parts = token.split('.');
+            if (parts.length !== 3) return;
+
+            const payload = JSON.parse(atob(parts[1]));
+            if (!payload.exp) return;
+
+            const expirationTime = payload.exp * 1000;
+            const currentTime = Date.now();
+            const timeUntilExpiry = expirationTime - currentTime;
+
+            // Refresh 5 minutes before expiry
+            const refreshTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 0);
+
+            console.log(`🔄 Token refresh scheduled in ${Math.round(refreshTime / 1000 / 60)} minutes`);
+
+            refreshTimeoutRef.current = setTimeout(async () => {
+                console.log('🔄 Scheduled token refresh triggered');
+                try {
+                    await refreshAccessToken();
+                } catch (error) {
+                    console.error('🔄 Scheduled refresh failed:', error);
+                }
+            }, refreshTime);
+        } catch (error) {
+            console.error('Error scheduling token refresh:', error);
+        }
+    };
+
+    // Refresh access token
+    const refreshAccessToken = async (): Promise<boolean> => {
+        // Prevent multiple simultaneous refresh attempts
+        if (isRefreshingRef.current) {
+            console.log('[REFRESH] Refresh already in progress, skipping...');
+            return false;
+        }
+
+        try {
+            isRefreshingRef.current = true;
+
             const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
             if (!refreshToken) {
-                throw new Error('No refresh token');
+                throw new Error('No refresh token available');
             }
+
+            console.log('[REFRESH] Attempting to refresh access token...');
 
             const response = await fetch('/api/auth/refresh', {
                 method: 'POST',
@@ -258,21 +277,147 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 body: JSON.stringify({ refreshToken }),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
+            const data = await response.json();
+
+            if (response.ok && data.accessToken) {
+                console.log('[REFRESH SUCCESS] Token refreshed successfully');
+
+                const newAccessToken = data.accessToken;
+                const newRefreshToken = data.refreshToken;
+                const userData = data.user;
+
+                // Update storage
+                localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+                localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+
+                if (userData) {
+                    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+                }
+
+                // Update state
                 setAuthState(prev => ({
                     ...prev,
-                    accessToken: data.accessToken,
+                    accessToken: newAccessToken,
+                    refreshToken: newRefreshToken,
+                    user: userData || prev.user,
+                    isAuthenticated: true,
+                    isLoading: false,
                 }));
+
+                // Schedule next refresh
+                scheduleTokenRefresh(newAccessToken);
+
+                return true;
             } else {
-                throw new Error('Token refresh failed');
+                console.error('[REFRESH ERROR] Token refresh failed:', data.error || 'Unknown error');
+                throw new Error(data.error || 'Token refresh failed');
             }
         } catch (error) {
-            console.error('Token refresh error:', error);
-            await logout();
+            console.error('[REFRESH ERROR] Token refresh error:', error);
+
+            // If refresh fails, clear auth
+            clearAuth();
+
+            return false;
+        } finally {
+            isRefreshingRef.current = false;
         }
     };
+
+    // Initialize auth state
+    useEffect(() => {
+        const initializeAuth = async () => {
+            try {
+                const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+                const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+                const userData = localStorage.getItem(STORAGE_KEYS.USER);
+
+                if (accessToken && refreshToken && userData) {
+                    // Check if token is expired
+                    if (isTokenExpired(accessToken)) {
+                        console.log('[AUTH] Access token expired on init, attempting refresh...');
+
+                        const refreshSuccess = await refreshAccessToken();
+                        if (!refreshSuccess) {
+                            console.log('[AUTH] Refresh failed, clearing auth');
+                            clearAuth();
+                            return;
+                        }
+                    } else {
+                        // Token is still valid
+                        const user = JSON.parse(userData) as User;
+
+                        if (user && user.id && user.email && user.role) {
+                            try {
+                                const normalizedUser: User = {
+                                    ...user,
+                                    role: normalizeUserRole(user.role),
+                                    lastLogin: safeParseDate(user.lastLogin),
+                                    createdAt: safeParseDate(user.createdAt) || '',
+                                    updatedAt: safeParseDate(user.updatedAt) || ''
+                                };
+
+                                setAuthState({
+                                    user: normalizedUser,
+                                    accessToken,
+                                    refreshToken,
+                                    isLoading: false,
+                                    isAuthenticated: true,
+                                });
+
+                                // Schedule token refresh
+                                scheduleTokenRefresh(accessToken);
+                            } catch (roleError) {
+                                console.warn('Invalid user role detected, clearing auth:', roleError);
+                                clearAuth();
+                            }
+                        } else {
+                            console.warn('Invalid user data in localStorage, clearing auth');
+                            clearAuth();
+                        }
+                    }
+                } else {
+                    setAuthState(prev => ({ ...prev, isLoading: false }));
+                }
+            } catch (error) {
+                console.error('Auth initialization error:', error);
+                clearAuth();
+            }
+        };
+
+        initializeAuth();
+
+        // Cleanup timeout on unmount
+        return () => {
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Route protection
+    useEffect(() => {
+        if (authState.isLoading) return;
+        if (!pathname) return;
+
+        if (authState.isAuthenticated && authState.user) {
+            if (isPublicRoute(pathname)) {
+                router.push('/dashboard');
+                return;
+            }
+
+            if (!hasRoutePermission(authState.user, pathname)) {
+                console.warn(`User ${authState.user.role} attempted to access unauthorized route: ${pathname}`);
+                router.push('/dashboard');
+                return;
+            }
+        } else {
+            if (!isPublicRoute(pathname) && pathname.startsWith('/dashboard')) {
+                router.push('/sign-in');
+                return;
+            }
+        }
+    }, [authState.isAuthenticated, authState.isLoading, authState.user, pathname, router]);
 
     const login = async (email: string, password: string): Promise<void> => {
         try {
@@ -289,9 +434,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
 
             if (response.ok) {
-                const { accessToken, refreshToken, user } = data as ApiLoginResponse;
+                const responseData = data.data || data;
+                const { accessToken, refreshToken, user } = responseData;
 
-                // Validate user has system role
                 if (!user.role) {
                     throw new Error('No user role received from server');
                 }
@@ -300,9 +445,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const normalizedUser: User = {
                         ...user,
                         role: normalizeUserRole(user.role),
-                        lastLogin: user.lastLogin ? new Date(user.lastLogin) : null,
-                        createdAt: new Date(user.createdAt),
-                        updatedAt: new Date(user.updatedAt)
+                        lastLogin: safeParseDate(user.lastLogin),
+                        createdAt: safeParseDate(user.createdAt) || '',
+                        updatedAt: safeParseDate(user.updatedAt) || ''
                     };
 
                     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
@@ -316,6 +461,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         isLoading: false,
                         isAuthenticated: true,
                     });
+
+                    // Schedule token refresh
+                    scheduleTokenRefresh(accessToken);
 
                     router.push('/dashboard');
                 } catch (roleError) {
@@ -346,11 +494,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json() as RegisterResponse;
 
             if (response.ok) {
-                // Registration successful, redirect to verification page if needed
                 if (userData.role === Role.CASHIER) {
                     router.push(`/auth/verify?email=${encodeURIComponent(userData.email)}`);
                 } else {
-                    // For admin/manager, redirect to login
                     router.push(`/sign-in?registered=true&email=${encodeURIComponent(userData.email)}`);
                 }
             } else {
@@ -365,7 +511,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = async (): Promise<void> => {
         try {
-            // Call logout API if we have tokens
             if (authState.accessToken && authState.refreshToken) {
                 await fetch('/api/auth/logout', {
                     method: 'POST',
@@ -379,19 +524,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Logout API error:', error);
         } finally {
-            // Clear local storage
-            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-            localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-            localStorage.removeItem(STORAGE_KEYS.USER);
-
-            setAuthState({
-                user: null,
-                accessToken: null,
-                refreshToken: null,
-                isLoading: false,
-                isAuthenticated: false,
-            });
-
+            clearAuth();
             router.push('/sign-in');
         }
     };
@@ -505,7 +638,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
 
             if (response.ok) {
-                // Update local user data
                 const updatedUser = { ...authState.user, ...data } as User;
                 localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
                 setAuthState(prev => ({ ...prev, user: updatedUser }));
@@ -603,7 +735,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 }
 
-// Hook to use auth context
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {

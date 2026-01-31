@@ -58,7 +58,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
+                        <div className="h-75">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={employeeData}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -82,7 +82,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         <CardDescription>Best selling products by quantity</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
+                        <div className="h-75">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={productData}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -144,7 +144,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         </TabsContent>
 
                         <TabsContent value="sales">
-                            <div className="h-[300px]">
+                            <div className="h-75">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
                                         data={[
@@ -172,7 +172,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         </TabsContent>
 
                         <TabsContent value="categories">
-                            <div className="h-[300px]">
+                            <div className="h-75">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie

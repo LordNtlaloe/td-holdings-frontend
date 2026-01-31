@@ -15,7 +15,7 @@ interface CardWrapperProps {
 
 export default function CardWrapper({ children, headerLabel, backButtonLabel, backButtonHref, showSocial }: CardWrapperProps) {
     return (
-        <Card className='w-[450px] shadow-md'>
+        <Card className='w-112.5 shadow-md'>
             <CardHeader>
                 <AuthHeader label={headerLabel} />
             </CardHeader>

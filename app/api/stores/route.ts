@@ -106,13 +106,25 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         console.log('🟦 Create Store API Route - Forwarding to backend:', `${API_BASE_URL}/stores`);
+        console.log('🟦 Authorization token:', token ? token.substring(0, 50) + '...' : 'No token');
         console.log('🟦 Request body:', { ...body });
+
+        if (!token) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'No authorization token',
+                    message: 'Authentication required'
+                },
+                { status: 401 }
+            );
+        }
 
         // Forward the request to your backend
         const response = await fetch(`${API_BASE_URL}/stores`, {
             method: 'POST',
             headers: {
-                'Authorization': token || '',
+                'Authorization': token,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),

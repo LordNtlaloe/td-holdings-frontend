@@ -1,3 +1,4 @@
+// components/products/products-card.tsx
 'use client';
 
 import { Product, ProductType, ProductGrade } from '@/types';
@@ -17,7 +18,8 @@ import {
     Eye,
     Edit,
     Archive,
-    Layers
+    Layers,
+    Trash2 // Add Trash icon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -35,8 +37,10 @@ interface ProductCardProps {
     product: Product;
     onView?: (product: Product) => void;
     onEdit?: (product: Product) => void;
-    onArchive?: (productId: string) => void;
-    onManageInventory?: (productId: string) => void;
+    onDelete?: (product: Product) => void; // Add this
+    onArchive?: (product: Product) => void;
+    onManageInventory?: (product: Product) => void;
+    onAssign?: (product: Product) => void;
     showActions?: boolean;
     compact?: boolean;
 }
@@ -45,7 +49,9 @@ export function ProductCard({
     product,
     onView,
     onEdit,
+    onDelete, // Add this
     onArchive,
+    onAssign,
     onManageInventory,
     showActions = true,
     compact = false
@@ -131,14 +137,25 @@ export function ProductCard({
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Product
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onManageInventory?.(product.id)}>
+                                <DropdownMenuItem onClick={() => onManageInventory?.(product)}>
                                     <Layers className="h-4 w-4 mr-2" />
                                     Manage Inventory
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onAssign?.(product)}>
+                                    <Layers className="h-4 w-4 mr-2" />
+                                    Assign to Stores
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                    onClick={() => onArchive?.(product.id)}
-                                    className="text-red-600"
+                                    onClick={() => onDelete?.(product)}
+                                    className="text-destructive"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Product
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => onArchive?.(product)}
+                                    className="text-destructive"
                                 >
                                     <Archive className="h-4 w-4 mr-2" />
                                     Archive Product
@@ -266,7 +283,7 @@ export function ProductCard({
                         {stockStatus.label} • {totalInventory} units in stock
                     </span>
                     <Link
-                        href={`/catalogue/products/${product.id}`}
+                        href={`products/${product.id}`}
                         className="text-primary hover:underline"
                     >
                         View Details →

@@ -17,20 +17,32 @@ import { cn } from '@/lib/utils';
 import { ProductCategoryStats, ProductPriceStatistics } from '@/types';
 
 interface ProductStatsProps {
+    totalProducts?: number; // Add this prop
+    totalValue?: number;    // Add this prop
+    averagePrice?: number;  // Add this prop
+    lowStockCount?: number; // Add this prop
     categoryStats: ProductCategoryStats[];
     priceStats: ProductPriceStatistics | null;
 }
 
-export function ProductStats({ categoryStats, priceStats }: ProductStatsProps) {
-    const totalProducts = categoryStats.reduce((sum, stat) => sum + stat.count, 0);
-    const totalInventory = categoryStats.reduce((sum, stat) => sum + stat.totalInventory, 0);
-    const averagePrice = priceStats?.averagePrice || 0;
-    const lowStockProducts = categoryStats.filter(stat => stat.totalInventory <= 10).length;
+export function ProductStats({
+    totalProducts = 0, // Default value
+    totalValue = 0,    // Default value
+    averagePrice = 0,  // Default value
+    lowStockCount = 0, // Default value
+    categoryStats,
+    priceStats
+}: ProductStatsProps) {
+    // Use provided props or calculate from categoryStats if not provided
+    const calculatedTotalProducts = totalProducts > 0 ? totalProducts : categoryStats.reduce((sum, stat) => sum + stat.count, 0);
+    const calculatedTotalInventory = totalValue > 0 ? totalValue : categoryStats.reduce((sum, stat) => sum + stat.totalInventory, 0);
+    const calculatedAveragePrice = averagePrice > 0 ? averagePrice : (priceStats?.averagePrice || 0);
+    const calculatedLowStockProducts = lowStockCount > 0 ? lowStockCount : 0; // Can't calculate from categoryStats without inventory data
 
     const statCards = [
         {
             title: 'Total Products',
-            value: totalProducts,
+            value: calculatedTotalProducts,
             icon: <Package className="h-4 w-4" />,
             description: 'Across all categories',
             color: 'bg-blue-500/10 text-blue-600',
@@ -38,7 +50,7 @@ export function ProductStats({ categoryStats, priceStats }: ProductStatsProps) {
         },
         {
             title: 'Total Inventory',
-            value: totalInventory,
+            value: calculatedTotalInventory,
             icon: <Layers className="h-4 w-4" />,
             description: 'Units in stock',
             color: 'bg-green-500/10 text-green-600',
@@ -46,7 +58,7 @@ export function ProductStats({ categoryStats, priceStats }: ProductStatsProps) {
         },
         {
             title: 'Avg Price',
-            value: `$${averagePrice.toFixed(2)}`,
+            value: `LSL${calculatedAveragePrice.toFixed(2)}`,
             icon: <DollarSign className="h-4 w-4" />,
             description: 'Across all products',
             color: 'bg-purple-500/10 text-purple-600',
@@ -54,7 +66,7 @@ export function ProductStats({ categoryStats, priceStats }: ProductStatsProps) {
         },
         {
             title: 'Price Range',
-            value: `$${priceStats?.minPrice.toFixed(2) || '0.00'} - $${priceStats?.maxPrice.toFixed(2) || '0.00'}`,
+            value: `LSL${priceStats?.minPrice.toFixed(2) || '0.00'} - LSL${priceStats?.maxPrice.toFixed(2) || '0.00'}`,
             icon: <BarChart3 className="h-4 w-4" />,
             description: 'Min to Max',
             color: 'bg-orange-500/10 text-orange-600',
@@ -62,11 +74,11 @@ export function ProductStats({ categoryStats, priceStats }: ProductStatsProps) {
         },
         {
             title: 'Low Stock',
-            value: lowStockProducts,
+            value: calculatedLowStockProducts,
             icon: <AlertTriangle className="h-4 w-4" />,
             description: 'Products needing attention',
             color: 'bg-yellow-500/10 text-yellow-600',
-            trend: lowStockProducts > 0 ? 'Needs attention' : 'All good',
+            trend: calculatedLowStockProducts > 0 ? 'Needs attention' : 'All good',
         },
     ];
 
