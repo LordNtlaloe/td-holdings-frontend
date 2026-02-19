@@ -1,3 +1,4 @@
+"use client"
 import { Breadcrumbs } from '@/components/general/breadcrumbs';
 import { Icon } from '@/components/general/icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,7 +44,7 @@ export function AppHeader({ breadcrumbs = [], user }: AppHeaderProps) {
                     <div className="lg:hidden">
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon" className="mr-2 h-[34px] w-[34px]">
+                                <Button variant="ghost" size="icon" className="mr-2 h-8.5 w-8.5">
                                     <Menu className="h-5 w-5" />
                                 </Button>
                             </SheetTrigger>
@@ -104,7 +105,7 @@ export function AppHeader({ breadcrumbs = [], user }: AppHeaderProps) {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer">
-                                            <Search className="!size-5 opacity-80 group-hover:opacity-100" />
+                                            <Search className="size-5! opacity-80 group-hover:opacity-100" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>

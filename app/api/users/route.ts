@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
         queryParams.append('limit', limit);
 
         const queryString = queryParams.toString();
-        const url = `${API_BASE_URL}/users/${queryString ? `?${queryString}` : ''}`;
+        // FIXED: Remove the extra slash before the query string
+        const url = `${API_BASE_URL}/auth/users${queryString ? `?${queryString}` : ''}`;
+
+        console.log('🟦 Forwarding users request to:', url);
 
         const response = await fetch(url, {
             method: 'GET',
@@ -45,12 +48,13 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
 
         if (!response.ok) {
+            console.error('🟥 Backend responded with error:', response.status, data);
             return NextResponse.json(data, { status: response.status });
         }
 
         return NextResponse.json(data);
     } catch (error) {
-        console.error('Get all users API error:', error);
+        console.error('🔴 Get all users API error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

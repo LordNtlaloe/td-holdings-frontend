@@ -17,7 +17,8 @@ import {
     Maximize2,
     Package,
     Leaf,
-    Truck as TruckIcon
+    Truck as TruckIcon,
+    AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -25,8 +26,11 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { Product } from '@/data/products'
+import { Product, ProductType } from '@/types'
 import { cn } from '@/lib/utils'
+import ProductAPI from '@/lib/api/products'
+import bales from "@/public/Images/bales.png"
+import tires from "@/public/Images/tires.png"
 
 interface QuickViewModalProps {
     product: Product | null
@@ -53,24 +57,71 @@ export default function QuickViewModal({
 
     // Mock images for gallery
     const productImages = [
-        product.image,
-        '🛞', // Alternative tire view
-        '📊', // Specifications
-        '🏞️', // In use image
+        bales,
+        tires
     ]
 
-    const tireSizes = ['205/55R16', '215/60R16', '225/45R17', '235/55R18']
-    const baleWeights = ['40 lbs', '50 lbs', '60 lbs', '70 lbs']
+    // Delivery options - defined inside component
     const deliveryOptions = [
         { value: 'standard', label: 'Standard (3-5 days)', price: 0, freeOver: 1000 },
         { value: 'express', label: 'Express (1-2 days)', price: 99.99, freeOver: null },
         { value: 'same-day', label: 'Same Day (Maseru)', price: 199.99, freeOver: null }
     ]
 
+    // Mock features based on product type
+    const getProductFeatures = () => {
+        if (product.type === ProductType.TIRE) {
+            return [
+                'Durable construction for long-lasting performance',
+                'Excellent traction on various road surfaces',
+                'Fuel-efficient design',
+                'Enhanced safety features'
+            ]
+        } else {
+            return [
+                'Premium quality hay/alfalfa',
+                'Properly cured and stored',
+                'High nutritional value for livestock',
+                'Consistent quality across bales'
+            ]
+        }
+    }
+
+    const features = getProductFeatures()
+
+    // Calculate stock status
+    const totalInventory = ProductAPI.calculateTotalInventory(product)
+    const stockStatus = ProductAPI.getStockStatusInfo(totalInventory)
+    const stockLabel = stockStatus.label
+    const stockColor = totalInventory > 10 ? 'bg-green-500 hover:bg-green-600' :
+        totalInventory > 0 ? 'bg-[#FBB320] hover:bg-[#e6a21c] text-[#1b2358]' :
+            'bg-red-500 hover:bg-red-600'
+
+    // Format price - FIXED: properly convert basePrice to number
+    const safeBasePrice = typeof product.basePrice === 'number' 
+        ? product.basePrice 
+        : parseFloat(String(product.basePrice || '0')) || 0
+    const formattedPrice = ProductAPI.formatCurrency(safeBasePrice)
+
+    // Create size/weight options based on product type
+    const getSizeOptions = () => {
+        if (product.type === ProductType.TIRE && product.tireSize) {
+            return [product.tireSize]
+        } else if (product.type === ProductType.BALE && product.baleWeight) {
+            return [`${product.baleWeight}kg`]
+        }
+        // Default options if specific size/weight not available
+        return product.type === ProductType.TIRE 
+            ? ['205/55R16', '215/60R16', '225/45R17', '235/55R18']
+            : ['40kg', '50kg', '60kg', '70kg']
+    }
+
+    const sizeOptions = getSizeOptions()
+
     const handleAddToCart = () => {
         setIsAddingToCart(true)
         setTimeout(() => {
-            onAddToCart(product, quantity, selectedSize)
+            onAddToCart(product, quantity, selectedSize || sizeOptions[0])
             setIsAddingToCart(false)
             // Auto close after adding to cart
             setTimeout(() => onClose(), 1000)
@@ -101,11 +152,12 @@ export default function QuickViewModal({
         }
     }
 
-    const renderStars = (rating: number) => {
+    const renderStars = (rating?: number) => {
+        const ratingValue = rating || 0
         return Array.from({ length: 5 }).map((_, i) => (
             <Star
                 key={i}
-                className={`w-4 h-4 ${i < Math.floor(rating)
+                className={`w-4 h-4 ${i < Math.floor(ratingValue)
                     ? 'fill-[#FBB320] text-[#FBB320]'
                     : 'fill-gray-200 text-gray-200'
                     }`}
@@ -133,7 +185,7 @@ export default function QuickViewModal({
                             {/* Main Image */}
                             <div className="relative h-96 bg-white rounded-lg mb-4 overflow-hidden group">
                                 <div className="w-full h-full flex items-center justify-center text-8xl">
-                                    {productImages[selectedImage]}
+                                    {product.type === ProductType.TIRE ? '🛞' : '🌾'}
                                 </div>
 
                                 {/* Image Navigation */}
@@ -164,19 +216,14 @@ export default function QuickViewModal({
                                 </Button>
 
                                 {/* Stock Badge */}
-                                <Badge className={`absolute top-2 left-2 ${product.stock === 'In Stock'
-                                    ? 'bg-green-500 hover:bg-green-600'
-                                    : product.stock === 'Low Stock'
-                                        ? 'bg-[#FBB320] hover:bg-[#e6a21c] text-[#1b2358]'
-                                        : 'bg-red-500 hover:bg-red-600'
-                                    }`}>
-                                    {product.stock}
+                                <Badge className={`absolute top-2 left-2 ${stockColor}`}>
+                                    {stockLabel}
                                 </Badge>
 
-                                {/* Discount Badge */}
-                                {product.discount && (
-                                    <Badge className="absolute top-2 left-20 bg-red-500 hover:bg-red-600">
-                                        -{product.discount}%
+                                {/* Grade Badge */}
+                                {product.grade && (
+                                    <Badge className="absolute top-2 left-20 bg-gray-800 hover:bg-gray-900">
+                                        {ProductAPI.getProductGradeInfo(product.grade).label}
                                     </Badge>
                                 )}
                             </div>
@@ -188,11 +235,11 @@ export default function QuickViewModal({
                                         key={index}
                                         onClick={() => setSelectedImage(index)}
                                         className={cn(
-                                            "flex-shrink-0 w-20 h-20 bg-white rounded-lg border-2 flex items-center justify-center text-2xl hover:border-[#1b2358] transition-colors",
+                                            "shrink-0 w-20 h-20 bg-white rounded-lg border-2 flex items-center justify-center text-2xl hover:border-[#1b2358] transition-colors",
                                             selectedImage === index ? "border-[#1b2358]" : "border-transparent"
                                         )}
                                     >
-                                        {image}
+                                        {image.width}
                                     </button>
                                 ))}
                             </div>
@@ -200,29 +247,31 @@ export default function QuickViewModal({
                             {/* Product Badges */}
                             <div className="flex flex-wrap gap-2 mt-4">
                                 <Badge className={
-                                    product.category === 'tires'
+                                    product.type === ProductType.TIRE
                                         ? 'bg-[#1b2358] hover:bg-[#151d4a]'
                                         : 'bg-[#FBB320] hover:bg-[#e6a21c] text-[#1b2358]'
                                 }>
-                                    {product.category === 'tires' ? (
+                                    {product.type === ProductType.TIRE ? (
                                         <TruckIcon className="w-3 h-3 mr-1" />
                                     ) : (
                                         <Leaf className="w-3 h-3 mr-1" />
                                     )}
-                                    {product.category === 'tires' ? 'Tire' : 'Farm Bale'}
+                                    {product.type === ProductType.TIRE ? 'Tire' : 'Farm Bale'}
                                 </Badge>
 
-                                {product.bestSeller && (
+                                {/* Best Seller badge - uncomment if you add this property to Product type */}
+                                {/* {product.bestSeller && (
                                     <Badge className="bg-[#FBB320] text-[#1b2358] hover:bg-[#e6a21c]">
                                         Best Seller
                                     </Badge>
-                                )}
+                                )} */}
 
-                                {product.trending && (
+                                {/* Trending badge - uncomment if you add this property to Product type */}
+                                {/* {product.trending && (
                                     <Badge className="bg-purple-500 hover:bg-purple-600">
                                         Trending
                                     </Badge>
-                                )}
+                                )} */}
                             </div>
                         </div>
 
@@ -238,30 +287,36 @@ export default function QuickViewModal({
                                     {renderStars(product.rating)}
                                 </div>
                                 <span className="text-sm text-gray-600">
-                                    {product.rating.toFixed(1)} ({product.reviewCount} reviews)
+                                    {product.rating?.toFixed(1) || '0.0'} ({product.reviewCount || 0} reviews)
                                 </span>
-                                <span className="text-sm text-gray-400">•</span>
-                                <span className="text-sm text-green-600 font-medium">
-                                    {product.purchaseCount} sold
-                                </span>
+                                {/* Purchase count - uncomment if you add this property to Product type */}
+                                {/* {product.purchaseCount && product.purchaseCount > 0 && (
+                                    <>
+                                        <span className="text-sm text-gray-400">•</span>
+                                        <span className="text-sm text-green-600 font-medium">
+                                            {product.purchaseCount} sold
+                                        </span>
+                                    </>
+                                )} */}
                             </div>
 
                             {/* Price */}
                             <div className="mb-6">
                                 <div className="flex items-center gap-3">
                                     <span className="text-3xl font-bold text-[#1b2358]">
-                                        LSL {product.price.toFixed(2)}
+                                        {formattedPrice}
                                     </span>
-                                    {product.originalPrice && (
+                                    {/* Original price - uncomment if you add this property to Product type */}
+                                    {/* {product.originalPrice && (
                                         <>
                                             <span className="text-xl text-gray-500 line-through">
-                                                LSL {product.originalPrice.toFixed(2)}
+                                                {ProductAPI.formatCurrency(product.originalPrice)}
                                             </span>
                                             <Badge className="bg-red-500 hover:bg-red-600">
-                                                Save LSL {(product.originalPrice - product.price).toFixed(2)}
+                                                Save {ProductAPI.formatCurrency(product.originalPrice - safeBasePrice)}
                                             </Badge>
                                         </>
-                                    )}
+                                    )} */}
                                 </div>
                                 <p className="text-sm text-gray-500 mt-1">
                                     VAT inclusive • Free shipping on orders over LSL 1000
@@ -269,47 +324,49 @@ export default function QuickViewModal({
                             </div>
 
                             {/* Description */}
-                            <p className="text-gray-600 mb-6">{product.description}</p>
+                            <p className="text-gray-600 mb-6">{product.description || 'No description available'}</p>
 
                             {/* Size/Weight Selection */}
-                            <div className="mb-6">
-                                <Label className="block text-sm font-medium text-gray-700 mb-3">
-                                    {product.category === 'tires' ? 'Select Size' : 'Select Weight'}
-                                </Label>
-                                <RadioGroup
-                                    value={selectedSize}
-                                    onValueChange={setSelectedSize}
-                                    className="flex flex-wrap gap-2"
-                                >
-                                    {(product.category === 'tires' ? tireSizes : baleWeights).map((option) => (
-                                        <div key={option}>
-                                            <RadioGroupItem
-                                                value={option}
-                                                id={option}
-                                                className="peer sr-only"
-                                            />
-                                            <Label
-                                                htmlFor={option}
-                                                className={cn(
-                                                    "inline-flex items-center justify-center px-4 py-2 border rounded-lg cursor-pointer transition-all",
-                                                    "peer-data-[state=checked]:border-[#1b2358] peer-data-[state=checked]:bg-[#1b2358]/5",
-                                                    "hover:border-[#1b2358] hover:bg-gray-50",
-                                                    selectedSize === option
-                                                        ? "border-[#1b2358] bg-[#1b2358]/5 text-[#1b2358] font-medium"
-                                                        : "border-gray-300"
-                                                )}
-                                            >
-                                                {option}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </RadioGroup>
-                                {!selectedSize && (
-                                    <p className="text-sm text-yellow-600 mt-2">
-                                        Please select a {product.category === 'tires' ? 'size' : 'weight'} to proceed
-                                    </p>
-                                )}
-                            </div>
+                            {sizeOptions.length > 0 && (
+                                <div className="mb-6">
+                                    <Label className="block text-sm font-medium text-gray-700 mb-3">
+                                        {product.type === ProductType.TIRE ? 'Select Size' : 'Select Weight'}
+                                    </Label>
+                                    <RadioGroup
+                                        value={selectedSize}
+                                        onValueChange={setSelectedSize}
+                                        className="flex flex-wrap gap-2"
+                                    >
+                                        {sizeOptions.map((option) => (
+                                            <div key={option}>
+                                                <RadioGroupItem
+                                                    value={option}
+                                                    id={option}
+                                                    className="peer sr-only"
+                                                />
+                                                <Label
+                                                    htmlFor={option}
+                                                    className={cn(
+                                                        "inline-flex items-center justify-center px-4 py-2 border rounded-lg cursor-pointer transition-all",
+                                                        "peer-data-[state=checked]:border-[#1b2358] peer-data-[state=checked]:bg-[#1b2358]/5",
+                                                        "hover:border-[#1b2358] hover:bg-gray-50",
+                                                        selectedSize === option
+                                                            ? "border-[#1b2358] bg-[#1b2358]/5 text-[#1b2358] font-medium"
+                                                            : "border-gray-300"
+                                                    )}
+                                                >
+                                                    {option}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                    {!selectedSize && sizeOptions.length > 0 && (
+                                        <p className="text-sm text-yellow-600 mt-2">
+                                            Please select a {product.type === ProductType.TIRE ? 'size' : 'weight'} to proceed
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Quantity & Add to Cart */}
                             <div className="mb-8">
@@ -342,7 +399,7 @@ export default function QuickViewModal({
                                     <div className="flex-1">
                                         <Button
                                             onClick={handleAddToCart}
-                                            disabled={isAddingToCart || !selectedSize}
+                                            disabled={isAddingToCart || totalInventory <= 0}
                                             className={cn(
                                                 "w-full h-12 text-lg",
                                                 isAddingToCart
@@ -355,10 +412,12 @@ export default function QuickViewModal({
                                                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                                                     Adding...
                                                 </>
+                                            ) : totalInventory <= 0 ? (
+                                                'Out of Stock'
                                             ) : (
                                                 <>
                                                     <ShoppingCart className="w-5 h-5 mr-2" />
-                                                    Add to Cart • LSL {(product.price * quantity).toFixed(2)}
+                                                    Add to Cart • {ProductAPI.formatCurrency(safeBasePrice * quantity)}
                                                 </>
                                             )}
                                         </Button>
@@ -420,9 +479,9 @@ export default function QuickViewModal({
                             <div className="mb-6">
                                 <h4 className="font-bold text-[#1b2358] mb-3">Key Features</h4>
                                 <div className="space-y-2">
-                                    {product.features.map((feature, index) => (
+                                    {features.map((feature, index) => (
                                         <div key={index} className="flex items-start gap-2">
-                                            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                            <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                                             <span className="text-sm text-gray-600">{feature}</span>
                                         </div>
                                     ))}
@@ -462,14 +521,14 @@ export default function QuickViewModal({
                             </div>
 
                             {/* Stock Alert */}
-                            {product.stock === 'Low Stock' && (
+                            {totalInventory > 0 && totalInventory <= 10 && (
                                 <div className="mt-6 p-3 bg-yellow-50 border-l-4 border-yellow-500">
                                     <div className="flex items-start gap-2">
                                         <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5" />
                                         <div>
                                             <p className="text-sm font-medium text-yellow-800">Low Stock Alert</p>
                                             <p className="text-xs text-yellow-700">
-                                                Only a few items left. Order now to avoid disappointment.
+                                                Only {totalInventory} item{totalInventory !== 1 ? 's' : ''} left. Order now to avoid disappointment.
                                             </p>
                                         </div>
                                     </div>
@@ -482,10 +541,3 @@ export default function QuickViewModal({
         </Dialog>
     )
 }
-
-// AlertCircle component
-const AlertCircle = ({ className }: { className?: string }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-)

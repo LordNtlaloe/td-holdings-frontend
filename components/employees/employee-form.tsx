@@ -21,7 +21,7 @@ import {
     ArrowRightLeft,
     Star,
 } from 'lucide-react';
-import { PerformanceReviewForm } from './forms/employee-performance-form';
+import { PerformanceReviewForm } from './forms/employees-performance-form';
 import { CreateEmployeeForm } from './forms/employees-create-form';
 import { EditEmployeeForm } from './forms/employees-edit-form';
 import { TransferEmployeeForm } from './forms/employees-transfer-form';
@@ -43,6 +43,7 @@ export interface CreateEmployeeFormProps extends BaseFormProps {
 export interface UpdateEmployeeFormProps extends BaseFormProps {
     mode: 'edit';
     employee: Employee;
+    stores?: Store[];
 }
 
 // Transfer Employee Form
@@ -66,6 +67,18 @@ export type EmployeeFormProps =
 
 export function EmployeeForm(props: EmployeeFormProps) {
     const { mode, onSubmit, onCancel, isLoading = false } = props;
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Debug props
+    useEffect(() => {
+        console.log('🎯 EmployeeForm - Props:', {
+            mode,
+            hasStores: 'stores' in props ? !!props.stores : false,
+            storesLength: 'stores' in props ? props.stores?.length : 0,
+            hasEmployee: 'employee' in props ? !!props.employee : false,
+            isLoading
+        });
+    }, [props, mode, isLoading]);
 
     const getSchema = () => {
         switch (mode) {
@@ -94,8 +107,9 @@ export function EmployeeForm(props: EmployeeFormProps) {
                 };
             case 'review':
                 return {
+                    reviewerId: '',
                     period: 'QUARTERLY',
-                    score: 80,
+                    score: 8,
                     feedback: '',
                     goals: [''],
                     strengths: [''],
@@ -103,7 +117,11 @@ export function EmployeeForm(props: EmployeeFormProps) {
                 };
             default:
                 return {
-                    userId: '',
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    phone: '',
+                    password: '',
                     storeId: '',
                     position: '',
                     role: 'CASHIER',
@@ -115,6 +133,7 @@ export function EmployeeForm(props: EmployeeFormProps) {
     const form = useForm<any>({
         resolver: joiResolver(getSchema()),
         defaultValues: getDefaultValues(),
+        mode: 'onChange',
     });
 
     // Reset form when mode changes
@@ -124,10 +143,16 @@ export function EmployeeForm(props: EmployeeFormProps) {
 
     const handleSubmit = async (data: any) => {
         try {
+            setIsSubmitting(true);
+            console.log('📝 Form submitted:', { mode, data });
             await onSubmit(data);
             form.reset(getDefaultValues());
         } catch (error: any) {
-            console.error('Form submission error:', error);
+            console.error('❌ Form submission error:', error);
+            // Re-throw to let the parent handle it
+            throw error;
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -154,28 +179,31 @@ export function EmployeeForm(props: EmployeeFormProps) {
     const renderFormContent = () => {
         switch (mode) {
             case 'create':
+                const createProps = props as CreateEmployeeFormProps;
+                console.log('📦 Rendering CreateEmployeeForm with stores:', createProps.stores);
                 return (
                     <CreateEmployeeForm
                         control={form.control}
-                        stores={(props as CreateEmployeeFormProps).stores}
-                        users={(props as CreateEmployeeFormProps).users}
+                        stores={createProps.stores}
                     />
                 );
             case 'edit':
                 return <EditEmployeeForm control={form.control} />;
             case 'transfer':
+                const transferProps = props as TransferEmployeeFormProps;
                 return (
                     <TransferEmployeeForm
                         control={form.control}
-                        employee={(props as TransferEmployeeFormProps).employee}
-                        stores={(props as TransferEmployeeFormProps).stores}
+                        employee={transferProps.employee}
+                        stores={transferProps.stores}
                     />
                 );
             case 'review':
+                const reviewProps = props as PerformanceReviewFormProps;
                 return (
                     <PerformanceReviewForm
                         control={form.control}
-                        employee={(props as PerformanceReviewFormProps).employee}
+                        employee={reviewProps.employee}
                     />
                 );
             default:
@@ -221,7 +249,11 @@ export function EmployeeForm(props: EmployeeFormProps) {
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                    <form
+                        onSubmit={form.handleSubmit(handleSubmit)}
+                        className="space-y-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="space-y-4">
                             {renderFormContent()}
                         </div>
@@ -231,15 +263,23 @@ export function EmployeeForm(props: EmployeeFormProps) {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={onCancel}
-                                    disabled={isLoading}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onCancel();
+                                    }}
+                                    disabled={isSubmitting || isLoading}
                                 >
                                     <X className="h-4 w-4 mr-2" />
                                     Cancel
                                 </Button>
                             )}
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? (
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting || isLoading}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {isSubmitting || isLoading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                         {getLoadingText()}

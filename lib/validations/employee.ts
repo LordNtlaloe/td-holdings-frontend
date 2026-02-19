@@ -16,11 +16,17 @@ export enum ReviewPeriodEnum {
 
 
 export const createEmployeeSchema = Joi.object({
-    userId: Joi.string().required().pattern(/^c[^\s]+$/),
-    storeId: Joi.string().required().pattern(/^c[^\s]+$/),
+    // User fields
+    firstName: Joi.string().required().min(2).max(50).trim(),
+    lastName: Joi.string().required().min(2).max(50).trim(),
+    email: Joi.string().email({ tlds: { allow: false } }).required(),
+    phone: Joi.string().optional().allow(''),
+    password: Joi.string().required().min(6),
+    // Employee fields
+    storeId: Joi.string().required(),
     position: Joi.string().required().min(2).max(100).trim(),
     role: Joi.string().valid(...Object.values(Role)).required(),
-    hireDate: Joi.date().max('now')
+    hireDate: Joi.date().max('now').optional(),
 });
 
 export const updateEmployeeSchema = Joi.object({

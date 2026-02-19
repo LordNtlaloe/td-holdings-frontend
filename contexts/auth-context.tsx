@@ -62,7 +62,8 @@ const routePermissions: Record<Role, string[]> = {
         '/sales/*',
         '/reports',
         '/reports/*',
-        '/store-locations'
+        '/store-locations',
+        '/pos'
     ],
     [Role.MANAGER]: [
         '/dashboard',
@@ -78,7 +79,8 @@ const routePermissions: Record<Role, string[]> = {
         '/sales',
         '/sales/*',
         '/reports',
-        '/reports/*'
+        '/reports/*',
+        '/pos'
     ],
     [Role.CASHIER]: [
         '/dashboard',
@@ -90,7 +92,8 @@ const routePermissions: Record<Role, string[]> = {
         '/sales',
         '/sales/*',
         '/customers',
-        '/customers/*'
+        '/customers/*',
+        '/pos'
     ],
 };
 

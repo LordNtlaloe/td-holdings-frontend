@@ -1,6 +1,7 @@
 "use client"
-import { CartItem, Product } from '@/types';
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react'; // Add useEffect
+import { CartItem, Product, Store } from '@/types';
+import { Employee } from '@/types';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 
 type DiscountType = {
@@ -11,6 +12,8 @@ type DiscountType = {
 type PosContextType = {
     cart: CartItem[];
     discount: DiscountType;
+    employee: Employee | null;
+    store: Store | null;
     addToCart: (product: Product) => void;
     removeFromCart: (productId: string) => void;
     increaseQuantity: (productId: string) => void;
@@ -25,26 +28,36 @@ type PosContextType = {
         subtotal: number;
         totalDiscount: number;
         total: number;
+        tax: number;
+        totalWithTax: number;
     };
     getAvailableQuantity: (product: Product, storeId?: string) => number;
     getCartItemCount: () => number;
     getCartTotal: () => number;
-    isLoading: boolean; // Add isLoading to the type
+    setEmployee: (employee: Employee | null) => void;
+    setStore: (store: Store | null) => void;
+    isLoading: boolean;
 };
 
 const PosContext = createContext<PosContextType | undefined>(undefined);
+
+const TAX_RATE = 0.15; // 15% tax rate
 
 export function PosProvider({ children }: { children: ReactNode }) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [discount, setDiscount] = useState<DiscountType>(null);
     const [isPaymentDialogVisible, setIsPaymentDialogVisible] = useState(false);
-    const [isLoading, setIsLoading] = useState(true); // Add isLoading state
+    const [employee, setEmployee] = useState<Employee | null>(null);
+    const [store, setStore] = useState<Store | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Load cart from localStorage on mount
     useEffect(() => {
         try {
             const savedCart = localStorage.getItem('agro-cart');
             const savedDiscount = localStorage.getItem('agro-cart-discount');
+            const savedEmployee = localStorage.getItem('agro-pos-employee');
+            const savedStore = localStorage.getItem('agro-pos-store');
 
             if (savedCart) {
                 const parsedCart = JSON.parse(savedCart);
@@ -55,26 +68,51 @@ export function PosProvider({ children }: { children: ReactNode }) {
                 const parsedDiscount = JSON.parse(savedDiscount);
                 setDiscount(parsedDiscount);
             }
+
+            if (savedEmployee) {
+                const parsedEmployee = JSON.parse(savedEmployee);
+                setEmployee(parsedEmployee);
+            }
+
+            if (savedStore) {
+                const parsedStore = JSON.parse(savedStore);
+                setStore(parsedStore);
+            }
         } catch (error) {
-            console.error('Error loading cart from localStorage:', error);
+            console.error('Error loading from localStorage:', error);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Save cart to localStorage whenever it changes
+    // Save to localStorage whenever state changes
     useEffect(() => {
-        if (!isLoading) { // Don't save on initial load
+        if (!isLoading) {
             localStorage.setItem('agro-cart', JSON.stringify(cart));
         }
     }, [cart, isLoading]);
 
-    // Save discount to localStorage whenever it changes
     useEffect(() => {
-        if (!isLoading) { // Don't save on initial load
+        if (!isLoading) {
             localStorage.setItem('agro-cart-discount', JSON.stringify(discount));
         }
     }, [discount, isLoading]);
+
+    useEffect(() => {
+        if (!isLoading && employee) {
+            localStorage.setItem('agro-pos-employee', JSON.stringify(employee));
+        } else if (!isLoading && !employee) {
+            localStorage.removeItem('agro-pos-employee');
+        }
+    }, [employee, isLoading]);
+
+    useEffect(() => {
+        if (!isLoading && store) {
+            localStorage.setItem('agro-pos-store', JSON.stringify(store));
+        } else if (!isLoading && !store) {
+            localStorage.removeItem('agro-pos-store');
+        }
+    }, [store, isLoading]);
 
     // Helper function to get available quantity for a product
     const getAvailableQuantity = (product: Product, storeId?: string): number => {
@@ -96,7 +134,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
     };
 
     const addToCart = (product: Product) => {
-        const availableQuantity = getAvailableQuantity(product);
+        const availableQuantity = getAvailableQuantity(product, store?.id);
 
         if (availableQuantity <= 0) {
             toast.error("Out of Stock", {
@@ -127,7 +165,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
                 product,
                 quantity: 1,
                 discount: 0,
-                unitPrice: product?.basePrice // Always set unitPrice
+                unitPrice: product?.basePrice
             }];
         });
 
@@ -148,7 +186,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
             const item = prev.find(item => item.product?.id === productId);
             if (!item) return prev;
 
-            const availableQuantity = getAvailableQuantity(item.product);
+            const availableQuantity = getAvailableQuantity(item.product, store?.id);
 
             if (item.quantity + 1 > availableQuantity) {
                 toast.error("Insufficient Stock", {
@@ -171,14 +209,13 @@ export function PosProvider({ children }: { children: ReactNode }) {
                 item.product?.id === productId
                     ? { ...item, quantity: Math.max(1, item.quantity - 1) }
                     : item
-            )
+            ).filter(item => item.quantity > 0)
         );
     };
 
     const clearCart = () => {
         setCart([]);
         setDiscount(null);
-        // Also clear localStorage
         localStorage.removeItem('agro-cart');
         localStorage.removeItem('agro-cart-discount');
         toast.success("Cart Cleared", {
@@ -220,8 +257,10 @@ export function PosProvider({ children }: { children: ReactNode }) {
         }
 
         const total = subtotal - totalDiscount;
+        const tax = subtotal * TAX_RATE;
+        const totalWithTax = total + tax;
 
-        return { subtotal, totalDiscount, total };
+        return { subtotal, totalDiscount, total, tax, totalWithTax };
     };
 
     const getCartItemCount = () => {
@@ -237,6 +276,8 @@ export function PosProvider({ children }: { children: ReactNode }) {
             value={{
                 cart,
                 discount,
+                employee,
+                store,
                 addToCart,
                 removeFromCart,
                 increaseQuantity,
@@ -251,7 +292,9 @@ export function PosProvider({ children }: { children: ReactNode }) {
                 getAvailableQuantity,
                 getCartItemCount,
                 getCartTotal,
-                isLoading, // Export isLoading
+                setEmployee,
+                setStore,
+                isLoading,
             }}
         >
             {children}

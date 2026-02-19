@@ -120,12 +120,12 @@ class ProductAPI {
             if (Array.isArray(response.data)) {
                 productsArray = response.data;
                 // Preserve pagination info if it exists
-                total: response.total || productsArray.length,
-                    paginationInfo = {
-                        page: response.page || params?.page || 1,
-                        limit: response.limit || params?.limit || 50,
-                        totalPages: response.totalPages || Math.ceil((response.total || productsArray.length) / (params?.limit || 50))
-                    };
+                paginationInfo = {
+                    total: response.total || productsArray.length,  // ✅ Fixed - now inside the object
+                    page: response.page || params?.page || 1,
+                    limit: response.limit || params?.limit || 50,
+                    totalPages: response.totalPages || Math.ceil((response.total || productsArray.length) / (params?.limit || 50))
+                };
             }
             // Handle nested data structure
             else if (response.data && typeof response.data === 'object' && Array.isArray(response.data)) {
@@ -177,132 +177,132 @@ class ProductAPI {
         });
     }
 
-// SIMPLIFIED ProductAPI.createProduct 
-// This works with the FLAT structure from the fixed ProductForm
-//
-// Replace your existing createProduct method with this one
+    // SIMPLIFIED ProductAPI.createProduct 
+    // This works with the FLAT structure from the fixed ProductForm
+    //
+    // Replace your existing createProduct method with this one
 
-static async createProduct(token: string, data: CreateProductFormValues): Promise<{
-    success: boolean;
-    message: string;
-    data: {
-        product: Product;
-        assignedStores: number;
-        inventory: {
-            mainStore: number;
-            branches: number;
-            total: number;
+    static async createProduct(token: string, data: CreateProductFormValues): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            product: Product;
+            assignedStores: number;
+            inventory: {
+                mainStore: number;
+                branches: number;
+                total: number;
+            };
         };
-    };
-}> {
-    console.log('🟦 ProductAPI.createProduct called');
-    console.log('🟦 Data received:', JSON.stringify(data, null, 2));
+    }> {
+        console.log('🟦 ProductAPI.createProduct called');
+        console.log('🟦 Data received:', JSON.stringify(data, null, 2));
 
-    // Data is already in correct flat format from the form!
-    // Just need to ensure numbers and clean up undefined values
-    
-    const requestData: any = {
-        name: data.name,
-        description: data.description || '',
-        basePrice: Number(data.basePrice),
-        type: data.type,
-        grade: data.grade,
-        commodity: data.commodity || null,
-        isActive: data.isActive !== false,
-        
-        // Inventory
-        warehouseQuantity: Number(data.warehouseQuantity || 0),
-        warehouseReorderLevel: data.warehouseReorderLevel ? Number(data.warehouseReorderLevel) : null,
-        warehouseOptimalLevel: data.warehouseOptimalLevel ? Number(data.warehouseOptimalLevel) : null,
-        
-        // Store assignments
-        storeAssignments: (data.storeAssignments || [])
-            .filter(sa => sa.isAssigned)
-            .map(sa => ({
-                storeId: sa.storeId,
-                storeName: sa.storeName,
-                isMainStore: sa.isMainStore || false,
-                isAssigned: true,
-                existingQuantity: Number(sa.existingQuantity || 0),
-                reorderLevel: sa.reorderLevel ? Number(sa.reorderLevel) : null,
-                optimalLevel: sa.optimalLevel ? Number(sa.optimalLevel) : null,
-                storePrice: sa.storePrice ? Number(sa.storePrice) : null
-            }))
-    };
+        // Data is already in correct flat format from the form!
+        // Just need to ensure numbers and clean up undefined values
 
-    // Add type-specific fields based on product type
-    if (data.type === ProductType.TIRE) {
-        console.log('🟦 Adding TIRE fields');
-        
-        requestData.tireCategory = data.tireCategory || null;
-        requestData.tireUsage = data.tireUsage || null;
-        requestData.tireSize = data.tireSize || null;
-        requestData.loadIndex = data.loadIndex || null;
-        requestData.speedRating = data.speedRating || null;
-        requestData.warrantyPeriod = data.warrantyPeriod || null;
-        
-        // Explicitly null for bale fields
-        requestData.baleWeight = null;
-        requestData.baleCategory = null;
-        requestData.originCountry = null;
-        requestData.importDate = null;
-        
-        console.log('🟦 TIRE fields added:', {
-            tireCategory: requestData.tireCategory,
-            tireUsage: requestData.tireUsage
-        });
-    } 
-    else if (data.type === ProductType.BALE) {
-        console.log('🟦 Adding BALE fields');
-        console.log('🟦 data.baleWeight from form:', data.baleWeight);
-        
-        // CRITICAL: Validate baleWeight is present
-        if (!data.baleWeight || data.baleWeight <= 0) {
-            console.error('🔴 CRITICAL: baleWeight is missing or invalid!');
-            console.error('🔴 data.baleWeight:', data.baleWeight);
-            throw new Error('Bale weight is required and must be greater than 0 for bale products');
+        const requestData: any = {
+            name: data.name,
+            description: data.description || '',
+            basePrice: Number(data.basePrice),
+            type: data.type,
+            grade: data.grade,
+            commodity: data.commodity || null,
+            isActive: data.isActive !== false,
+
+            // Inventory
+            warehouseQuantity: Number(data.warehouseQuantity || 0),
+            warehouseReorderLevel: data.warehouseReorderLevel ? Number(data.warehouseReorderLevel) : null,
+            warehouseOptimalLevel: data.warehouseOptimalLevel ? Number(data.warehouseOptimalLevel) : null,
+
+            // Store assignments
+            storeAssignments: (data.storeAssignments || [])
+                .filter(sa => sa.isAssigned)
+                .map(sa => ({
+                    storeId: sa.storeId,
+                    storeName: sa.storeName,
+                    isMainStore: sa.isMainStore || false,
+                    isAssigned: true,
+                    existingQuantity: Number(sa.existingQuantity || 0),
+                    reorderLevel: sa.reorderLevel ? Number(sa.reorderLevel) : null,
+                    optimalLevel: sa.optimalLevel ? Number(sa.optimalLevel) : null,
+                    storePrice: sa.storePrice ? Number(sa.storePrice) : null
+                }))
+        };
+
+        // Add type-specific fields based on product type
+        if (data.type === ProductType.TIRE) {
+            console.log('🟦 Adding TIRE fields');
+
+            requestData.tireCategory = data.tireCategory || null;
+            requestData.tireUsage = data.tireUsage || null;
+            requestData.tireSize = data.tireSize || null;
+            requestData.loadIndex = data.loadIndex || null;
+            requestData.speedRating = data.speedRating || null;
+            requestData.warrantyPeriod = data.warrantyPeriod || null;
+
+            // Explicitly null for bale fields
+            requestData.baleWeight = null;
+            requestData.baleCategory = null;
+            requestData.originCountry = null;
+            requestData.importDate = null;
+
+            console.log('🟦 TIRE fields added:', {
+                tireCategory: requestData.tireCategory,
+                tireUsage: requestData.tireUsage
+            });
         }
-        
-        requestData.baleWeight = Number(data.baleWeight);
-        requestData.baleCategory = data.baleCategory || null;
-        requestData.originCountry = data.originCountry || null;
-        requestData.importDate = data.importDate || null;
-        
-        // Explicitly null for tire fields
-        requestData.tireCategory = null;
-        requestData.tireUsage = null;
-        requestData.tireSize = null;
-        requestData.loadIndex = null;
-        requestData.speedRating = null;
-        requestData.warrantyPeriod = null;
-        
-        console.log('🟦 BALE fields added:', {
-            baleWeight: requestData.baleWeight,
-            baleCategory: requestData.baleCategory,
-            originCountry: requestData.originCountry
+        else if (data.type === ProductType.BALE) {
+            console.log('🟦 Adding BALE fields');
+            console.log('🟦 data.baleWeight from form:', data.baleWeight);
+
+            // CRITICAL: Validate baleWeight is present
+            if (!data.baleWeight || data.baleWeight <= 0) {
+                console.error('🔴 CRITICAL: baleWeight is missing or invalid!');
+                console.error('🔴 data.baleWeight:', data.baleWeight);
+                throw new Error('Bale weight is required and must be greater than 0 for bale products');
+            }
+
+            requestData.baleWeight = Number(data.baleWeight);
+            requestData.baleCategory = data.baleCategory || null;
+            requestData.originCountry = data.originCountry || null;
+            requestData.importDate = data.importDate || null;
+
+            // Explicitly null for tire fields
+            requestData.tireCategory = null;
+            requestData.tireUsage = null;
+            requestData.tireSize = null;
+            requestData.loadIndex = null;
+            requestData.speedRating = null;
+            requestData.warrantyPeriod = null;
+
+            console.log('🟦 BALE fields added:', {
+                baleWeight: requestData.baleWeight,
+                baleCategory: requestData.baleCategory,
+                originCountry: requestData.originCountry
+            });
+        }
+
+        console.log('🟦 ========================================');
+        console.log('🟦 FINAL REQUEST DATA TO BACKEND');
+        console.log('🟦 ========================================');
+        console.log('🟦 Request body:', JSON.stringify(requestData, null, 2));
+
+        // Final validation before sending
+        if (requestData.type === ProductType.BALE && !requestData.baleWeight) {
+            console.error('🔴 CRITICAL: baleWeight is still null before API call!');
+            throw new Error('Internal error: Bale weight is missing');
+        }
+
+        return this.fetchAPI('/products', {
+            method: 'POST',
+            body: JSON.stringify(requestData),
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
         });
     }
-
-    console.log('🟦 ========================================');
-    console.log('🟦 FINAL REQUEST DATA TO BACKEND');
-    console.log('🟦 ========================================');
-    console.log('🟦 Request body:', JSON.stringify(requestData, null, 2));
-
-    // Final validation before sending
-    if (requestData.type === ProductType.BALE && !requestData.baleWeight) {
-        console.error('🔴 CRITICAL: baleWeight is still null before API call!');
-        throw new Error('Internal error: Bale weight is missing');
-    }
-
-    return this.fetchAPI('/products', {
-        method: 'POST',
-        body: JSON.stringify(requestData),
-        headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-    });
-}
     static async updateProduct(token: string, productId: string, data: UpdateProductFormValues): Promise<Product> {
         // Transform data to match backend expectations
         const requestData: any = {};
@@ -436,19 +436,30 @@ static async createProduct(token: string, data: CreateProductFormValues): Promis
         });
     }
 
+    // lib/api/products.ts - Updated getLowStockProducts method
+
     static async getLowStockProducts(
         token: string,
         threshold: number = 10
     ): Promise<LowStockProduct[]> {
-        const query = new URLSearchParams();
-        query.append('threshold', threshold.toString());
+        try {
+            const query = new URLSearchParams();
+            query.append('threshold', threshold.toString());
 
-        return this.fetchAPI(`/products/reports/low-stock?${query.toString()}`, {
-            headers: { Authorization: `Bearer ${token}` },
-            cache: 'no-store',
-        });
+            return await this.fetchAPI(`/products/reports/low-stock?${query.toString()}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+            });
+        } catch (error: any) {
+            // If it's a 403 error, the user doesn't have permission
+            if (error.message.includes('403')) {
+                console.warn('User does not have permission to view low stock reports');
+                // Return empty array instead of throwing
+                return [];
+            }
+            throw error;
+        }
     }
-
     static async searchProducts(
         token: string,
         query: string,

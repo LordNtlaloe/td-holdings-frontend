@@ -1,3 +1,4 @@
+// components/client/product-card.tsx
 "use client"
 
 import { useState } from 'react'
@@ -58,8 +59,10 @@ export default function ProductCard({
                 'bg-red-500 hover:bg-red-600') :
         'bg-gray-500 hover:bg-gray-600'
 
-    // Format price using ProductAPI utility
-    const formattedPrice = ProductAPI.formatCurrency(product.basePrice)
+    // Format price using ProductAPI utility - FIXED: Ensure basePrice is a number
+    const safeBasePrice = typeof product.basePrice === 'number' ? product.basePrice : 
+                         parseFloat(product.basePrice || '0') || 0
+    const formattedPrice = ProductAPI.formatCurrency(safeBasePrice)
 
     const handleAddToCart = async () => {
         if (!onAddToCart) return;
@@ -144,7 +147,7 @@ export default function ProductCard({
                                     {product.description || 'No description available'}
                                 </p>
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                    {product.type === ProductType.TIRE && product && (
+                                    {product.type === ProductType.TIRE && product.tireCategory && (
                                         <>
                                             <span className="text-xs px-3 py-1 bg-gray-100 rounded-full">
                                                 {ProductAPI.getTireCategoryLabel(product.tireCategory)}
@@ -159,7 +162,7 @@ export default function ProductCard({
                                             )}
                                         </>
                                     )}
-                                    {product.type === ProductType.BALE && product && (
+                                    {product.type === ProductType.BALE && product.baleWeight && (
                                         <>
                                             {product.baleWeight && (
                                                 <span className="text-xs px-3 py-1 bg-gray-100 rounded-full">
@@ -311,7 +314,7 @@ export default function ProductCard({
                     {product.description || 'No description available'}
                 </p>
                 <div className="flex flex-wrap gap-1 mb-4">
-                    {product.type === ProductType.TIRE && product && (
+                    {product.type === ProductType.TIRE && product.tireCategory && (
                         <>
                             <span className="text-xs px-2 py-1 bg-gray-100 rounded">
                                 {ProductAPI.getTireCategoryLabel(product.tireCategory)}

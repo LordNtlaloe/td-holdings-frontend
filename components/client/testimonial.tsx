@@ -96,15 +96,14 @@ const testimonials: Testimonial[] = [
 export default function TestimonialCarousel() {
     const [currentIndex, setCurrentIndex] = useState(0)
     const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+    const [perView, setPerView] = useState(3) // Default to 3 for SSR
+    const [isClient, setIsClient] = useState(false) // Track client-side hydration
 
     const itemsPerView = () => {
-        if (typeof window === 'undefined') return 3
         if (window.innerWidth < 640) return 1
         if (window.innerWidth < 1024) return 2
         return 3
     }
-
-    const [perView, setPerView] = useState(itemsPerView())
 
     const totalSlides = Math.ceil(testimonials.length / perView)
 
@@ -122,17 +121,22 @@ export default function TestimonialCarousel() {
 
     // Handle auto-play
     useEffect(() => {
-        if (!isAutoPlaying) return
+        if (!isAutoPlaying || !isClient) return
 
         const interval = setInterval(() => {
             nextSlide()
         }, 5000)
 
         return () => clearInterval(interval)
-    }, [isAutoPlaying, currentIndex])
+    }, [isAutoPlaying, currentIndex, totalSlides, isClient])
 
-    // Handle responsive items per view
+    // Initialize client-side state and handle responsive items per view
     useEffect(() => {
+        setIsClient(true)
+
+        // Set initial perView based on current window size
+        setPerView(itemsPerView())
+
         const handleResize = () => {
             setPerView(itemsPerView())
             setCurrentIndex(0) // Reset to first slide on resize
@@ -142,19 +146,48 @@ export default function TestimonialCarousel() {
         return () => window.removeEventListener('resize', handleResize)
     }, [])
 
-    // Get visible testimonials based on current index
-    const visibleTestimonials = testimonials.slice(
-        currentIndex * perView,
-        (currentIndex * perView) + perView
-    )
+    // Don't render carousel content during SSR or before client-side hydration
+    if (!isClient) {
+        return (
+            <div className="relative max-w-7xl mx-auto px-4 py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <div className="inline-flex items-center justify-center p-3 bg-[#FBB320]/10 rounded-full mb-4">
+                        <Quote className="w-8 h-8 text-[#FBB320]" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-bold text-[#1b2358] mb-3">
+                        What Our Clients Say
+                    </h2>
+                    <p className="text-gray-600 max-w-2xl mx-auto">
+                        Trusted by farmers, businesses, and individuals across Lesotho
+                    </p>
+                </div>
+                {/* Loading skeleton */}
+                <div className="h-64 flex items-center justify-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                                <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                                <div className="space-y-3">
+                                    <div className="h-4 bg-gray-200 rounded"></div>
+                                    <div className="h-4 bg-gray-200 rounded"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     const renderStars = (rating: number) => {
         return Array.from({ length: 5 }).map((_, i) => (
             <Star
                 key={i}
                 className={`w-4 h-4 ${i < rating
-                        ? 'fill-[#FBB320] text-[#FBB320]'
-                        : 'fill-gray-200 text-gray-200'
+                    ? 'fill-[#FBB320] text-[#FBB320]'
+                    : 'fill-gray-200 text-gray-200'
                     }`}
             />
         ))
@@ -269,6 +302,14 @@ export default function TestimonialCarousel() {
 
 // Testimonial Card Component
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+    const getCategoryColor = (category: Testimonial['category']) => {
+        switch (category) {
+            case 'tires': return 'bg-[#1b2358]'
+            case 'bales': return 'bg-[#FBB320]'
+            case 'both': return 'bg-gradient-to-r from-[#1b2358] to-[#FBB320]'
+        }
+    }
+
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-all duration-300 h-full">
             {/* Category Badge */}
@@ -299,8 +340,8 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
                         <Star
                             key={i}
                             className={`w-4 h-4 ${i < testimonial.rating
-                                    ? 'fill-[#FBB320] text-[#FBB320]'
-                                    : 'fill-gray-200 text-gray-200'
+                                ? 'fill-[#FBB320] text-[#FBB320]'
+                                : 'fill-gray-200 text-gray-200'
                                 }`}
                         />
                     ))}

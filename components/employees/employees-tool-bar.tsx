@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,6 +13,8 @@ interface EmployeeToolbarProps {
     onRefresh: () => void;
     onExport: () => void;
     onCreateEmployee: (data: any) => Promise<void>;
+    isCreateDialogOpen?: boolean;
+    onCreateDialogChange?: (open: boolean) => void;
     stores: Store[];
     users: User[];
 }
@@ -21,6 +25,8 @@ export function EmployeeToolbar({
     onRefresh,
     onExport,
     onCreateEmployee,
+    isCreateDialogOpen,
+    onCreateDialogChange,
     stores,
     users
 }: EmployeeToolbarProps) {
@@ -30,6 +36,7 @@ export function EmployeeToolbar({
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
             </Button>
+
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline">
@@ -47,29 +54,48 @@ export function EmployeeToolbar({
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <Dialog>
+
+            {/* Create Employee Dialog - Controlled from parent */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={onCreateDialogChange}>
                 <DialogTrigger asChild>
                     <Button>
                         <UserPlus className="h-4 w-4 mr-2" />
                         Add Employee
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent
+                    className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <DialogHeader>
                         <DialogTitle>Add New Employee</DialogTitle>
                         <DialogDescription>
                             Add a new employee to your workforce
                         </DialogDescription>
                     </DialogHeader>
-                    <EmployeeForm
-                        mode="create"
-                        onSubmit={onCreateEmployee}
-                        onCancel={() => { }}
-                        stores={stores}
-                        users={users}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <EmployeeForm
+                            mode="create"
+                            onSubmit={async (data) => {
+                                try {
+                                    await onCreateEmployee(data);
+                                    // Close dialog after successful submission
+                                    if (onCreateDialogChange) {
+                                        onCreateDialogChange(false);
+                                    }
+                                } catch (error) {
+                                    // Form will handle error display, don't close dialog
+                                    console.error('Form submission error:', error);
+                                }
+                            }}
+                            onCancel={() => onCreateDialogChange?.(false)}
+                            stores={stores}
+                            users={users}
+                        />
+                    </div>
                 </DialogContent>
             </Dialog>
+
             <div className="flex border rounded-md">
                 <Button
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}

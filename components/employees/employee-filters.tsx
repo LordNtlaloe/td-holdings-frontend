@@ -16,7 +16,7 @@ export function EmployeeFiltersComponent({ filters, stores, onFilterChange }: Em
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Search employees..."
-                    className="pl-8 w-[200px] lg:w-[300px]"
+                    className="pl-8 w-50 lg:w-75"
                     value={filters.search || ''}
                     onChange={(e) => onFilterChange({ search: e.target.value, page: 1 })}
                 />
@@ -31,7 +31,7 @@ export function EmployeeFiltersComponent({ filters, stores, onFilterChange }: Em
                     })
                 }
             >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-37.5">
                     <Building className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="All Stores" />
                 </SelectTrigger>
@@ -54,7 +54,7 @@ export function EmployeeFiltersComponent({ filters, stores, onFilterChange }: Em
                     })
                 }
             >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-37.5">
                     <UserIcon className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
@@ -75,7 +75,7 @@ export function EmployeeFiltersComponent({ filters, stores, onFilterChange }: Em
                     })
                 }
             >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-37.5">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="All Status" />
                 </SelectTrigger>

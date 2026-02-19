@@ -145,38 +145,47 @@ class AuthAPI {
 
     // ============ USER MANAGEMENT (ADMIN/MANAGER) ============
 
-    static async getAllUsers(
-        token: string,
-        filters?: {
-            role?: string;
-            storeId?: string;
-            isActive?: boolean;
-            search?: string;
-        },
-        pagination?: {
-            page?: number;
-            limit?: number;
-        }
-    ): Promise<{
-        users: User[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    }> {
-        const query = new URLSearchParams();
-
-        if (filters?.role) query.append('role', filters.role);
-        if (filters?.storeId) query.append('storeId', filters.storeId);
-        if (filters?.isActive !== undefined) query.append('isActive', filters.isActive.toString());
-        if (filters?.search) query.append('search', filters.search);
-        if (pagination?.page) query.append('page', pagination.page.toString());
-        if (pagination?.limit) query.append('limit', pagination.limit.toString());
-
-        return this.fetchAPI(`/users?${query.toString()}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+static async getAllUsers(
+    token: string,
+    filters?: {
+        role?: string;
+        storeId?: string;
+        isActive?: boolean;
+        search?: string;
+    },
+    pagination?: {
+        page?: number;
+        limit?: number;
     }
+): Promise<{
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}> {
+    const query = new URLSearchParams();
+
+    if (filters?.role) query.append('role', filters.role);
+    if (filters?.storeId) query.append('storeId', filters.storeId);
+    if (filters?.isActive !== undefined) query.append('isActive', filters.isActive.toString());
+    if (filters?.search) query.append('search', filters.search);
+    if (pagination?.page) query.append('page', pagination.page.toString());
+    if (pagination?.limit) query.append('limit', pagination.limit.toString());
+
+    const response = await this.fetchAPI<any>(`/users?${query.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Transform the response to match the expected format
+    return {
+        users: response.data || [],
+        total: response.meta?.total || 0,
+        page: response.meta?.page || 1,
+        limit: response.meta?.limit || 50,
+        totalPages: response.meta?.totalPages || 1
+    };
+}
 
     static async getUserById(token: string, userId: string): Promise<User> {
         return this.fetchAPI(`/users/${userId}`, {

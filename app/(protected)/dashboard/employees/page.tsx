@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Employee, EmployeeFilters, EmployeeStats, Store, User } from '@/types';
 import EmployeeAPI from '@/lib/api/employees';
 import StoreAPI from '@/lib/api/stores';
-import AuthAPI from '@/lib/api/auth';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 import { EmployeeStats as EmployeeStatsComponent } from '@/components/employees/employee-stats';
@@ -16,6 +15,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { EmployeeForm } from '@/components/employees/employee-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EmployeeToolbar } from '@/components/employees/employees-tool-bar';
+import AuthAPI from '@/lib/api/auth';
 
 export default function EmployeesPage() {
     const router = useRouter();
@@ -24,7 +24,7 @@ export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-    const [isCreating, setIsCreating] = useState(false);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [transferringEmployee, setTransferringEmployee] = useState<string | null>(null);
     const [stats, setStats] = useState<EmployeeStats | null>(null);
@@ -42,7 +42,6 @@ export default function EmployeesPage() {
         sortBy: 'name',
     });
 
-
     const loadEmployees = async () => {
         if (!isAuthenticated || !accessToken) {
             console.log('⚠️ Cannot load employees: not authenticated or no token');
@@ -51,18 +50,47 @@ export default function EmployeesPage() {
 
         try {
             setLoading(true);
-            const [employeesResponse, statsData, storesData, usersData] = await Promise.all([
+            const [employeesResponse, statsData, storesData, usersResponse] = await Promise.all([
                 EmployeeAPI.getEmployees(accessToken, filters),
                 EmployeeAPI.getEmployeeStats(accessToken),
                 StoreAPI.getStores(accessToken, { limit: 100 }),
                 AuthAPI.getAllUsers(accessToken)
             ]);
 
-            // Access the correct properties based on your API response structure
-            setEmployees(employeesResponse.employees || []);
+            console.log('📦 Employees Response:', employeesResponse);
+            console.log('📦 Users Response:', usersResponse);
+
+            // Handle the response based on your API structure
+            let employeesList: Employee[] = [];
+
+            if (Array.isArray(employeesResponse)) {
+                employeesList = employeesResponse;
+            } else if (employeesResponse.data && Array.isArray(employeesResponse.data)) {
+                employeesList = employeesResponse.data;
+            } else if (employeesResponse.employees && Array.isArray(employeesResponse.employees)) {
+                employeesList = employeesResponse.employees;
+            } else {
+                console.warn('⚠️ Unexpected employees response format:', employeesResponse);
+                employeesList = [];
+            }
+
+            setEmployees(employeesList);
             setStats(statsData);
-            setStores(storesData.stores || []);
-            setAvailableUsers(usersData.users || []);
+
+            // Handle stores data
+            if (Array.isArray(storesData)) {
+                setStores(storesData);
+            } else if (storesData.data && Array.isArray(storesData.data)) {
+                setStores(storesData.data);
+            } else if (storesData.stores && Array.isArray(storesData.stores)) {
+                setStores(storesData.stores);
+            } else {
+                setStores([]);
+            }
+
+            // Handle users data - now it should be in the correct format
+            setAvailableUsers(usersResponse.users || []);
+
         } catch (error: any) {
             console.error('❌ Error loading employees:', error);
             toast.error('Error', {
@@ -72,6 +100,7 @@ export default function EmployeesPage() {
             setLoading(false);
         }
     };
+    
     useEffect(() => {
         if (!authLoading && isAuthenticated && accessToken) {
             loadEmployees();
@@ -97,10 +126,12 @@ export default function EmployeesPage() {
             toast.success('Success', {
                 description: 'Employee created successfully',
             });
-            setIsCreating(false);
-            loadEmployees();
+            await loadEmployees(); // Refresh the list
         } catch (error: any) {
-            throw error;
+            toast.error('Error', {
+                description: error.message || 'Failed to create employee',
+            });
+            throw error; // Re-throw so the form knows submission failed
         }
     };
 
@@ -113,8 +144,11 @@ export default function EmployeesPage() {
                 description: 'Employee updated successfully',
             });
             setEditingEmployee(null);
-            loadEmployees();
+            await loadEmployees();
         } catch (error: any) {
+            toast.error('Error', {
+                description: error.message || 'Failed to update employee',
+            });
             throw error;
         }
     };
@@ -128,8 +162,11 @@ export default function EmployeesPage() {
                 description: 'Employee transferred successfully',
             });
             setTransferringEmployee(null);
-            loadEmployees();
+            await loadEmployees();
         } catch (error: any) {
+            toast.error('Error', {
+                description: error.message || 'Failed to transfer employee',
+            });
             throw error;
         }
     };
@@ -142,7 +179,7 @@ export default function EmployeesPage() {
             toast.success('Success', {
                 description: 'Employee terminated successfully',
             });
-            loadEmployees();
+            await loadEmployees();
         } catch (error: any) {
             toast.error('Error', {
                 description: error.message || 'Failed to terminate employee',
@@ -203,6 +240,8 @@ export default function EmployeesPage() {
                     onRefresh={loadEmployees}
                     onExport={handleExportEmployees}
                     onCreateEmployee={handleCreateEmployee}
+                    isCreateDialogOpen={isCreateDialogOpen}
+                    onCreateDialogChange={setIsCreateDialogOpen}
                     stores={stores}
                     users={availableUsers}
                 />
@@ -233,7 +272,7 @@ export default function EmployeesPage() {
                         employees={employees}
                         viewMode={viewMode}
                         filters={filters}
-                        onShowCreateForm={() => setIsCreating(true)}
+                        onShowCreateForm={() => setIsCreateDialogOpen(true)}
                         onEdit={setEditingEmployee}
                         onTransfer={setTransferringEmployee}
                         onTerminate={handleTerminateEmployee}
@@ -244,12 +283,15 @@ export default function EmployeesPage() {
                 </CardContent>
             </Card>
 
-            {/* Dialogs */}
+            {/* Edit Employee Dialog */}
             <EditEmployeeDialog
                 employee={editingEmployee}
+                stores={stores}
                 onClose={() => setEditingEmployee(null)}
                 onUpdate={handleUpdateEmployee}
             />
+
+            {/* Transfer Employee Dialog */}
             <TransferEmployeeDialog
                 employeeId={transferringEmployee}
                 employees={employees}
@@ -264,10 +306,12 @@ export default function EmployeesPage() {
 // Dialog Components
 function EditEmployeeDialog({
     employee,
+    stores,
     onClose,
     onUpdate
 }: {
     employee: Employee | null;
+    stores: Store[];
     onClose: () => void;
     onUpdate: (data: any) => Promise<void>;
 }) {
@@ -275,17 +319,25 @@ function EditEmployeeDialog({
 
     return (
         <Dialog open={!!employee} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent
+                className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <DialogHeader>
                     <DialogTitle>Edit Employee</DialogTitle>
-                    <DialogDescription>Update employee information</DialogDescription>
+                    <DialogDescription>
+                        Update employee information for {employee.user?.firstName} {employee.user?.lastName}
+                    </DialogDescription>
                 </DialogHeader>
-                <EmployeeForm
-                    mode="edit"
-                    employee={employee}
-                    onSubmit={onUpdate}
-                    onCancel={onClose}
-                />
+                <div onClick={(e) => e.stopPropagation()}>
+                    <EmployeeForm
+                        mode="edit"
+                        employee={employee}
+                        stores={stores}
+                        onSubmit={onUpdate}
+                        onCancel={onClose}
+                    />
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -310,20 +362,27 @@ function TransferEmployeeDialog({
 
     return (
         <Dialog open={!!employeeId} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent
+                className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <DialogHeader>
                     <DialogTitle>Transfer Employee</DialogTitle>
-                    <DialogDescription>Transfer employee to another store</DialogDescription>
+                    <DialogDescription>
+                        Transfer {employee?.user?.firstName} {employee?.user?.lastName} to another store
+                    </DialogDescription>
                 </DialogHeader>
-                {employee && (
-                    <EmployeeForm
-                        mode="transfer"
-                        employee={employee}
-                        stores={stores.filter(s => s.id !== employee.storeId)}
-                        onSubmit={onTransfer}
-                        onCancel={onClose}
-                    />
-                )}
+                <div onClick={(e) => e.stopPropagation()}>
+                    {employee && (
+                        <EmployeeForm
+                            mode="transfer"
+                            employee={employee}
+                            stores={stores.filter(s => s.id !== employee.storeId)}
+                            onSubmit={onTransfer}
+                            onCancel={onClose}
+                        />
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
     );

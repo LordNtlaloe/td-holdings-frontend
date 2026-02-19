@@ -197,7 +197,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
+                        <div className="h-75">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={salesData}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -236,7 +236,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         <CardDescription>Key performance indicators</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
+                        <div className="h-75">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={metricsData}>
                                     <PolarGrid />
@@ -282,7 +282,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         </TabsList>
 
                         <TabsContent value="comparison" className="space-y-4">
-                            <div className="h-[300px]">
+                            <div className="h-75">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={comparisonData}>
                                         <CartesianGrid strokeDasharray="3 3" />
@@ -305,7 +305,7 @@ export function PerformanceCharts({ performance }: PerformanceChartsProps) {
                         </TabsContent>
 
                         <TabsContent value="products" className="space-y-4">
-                            <div className="h-[300px]">
+                            <div className="h-75">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={productData}>
                                         <CartesianGrid strokeDasharray="3 3" />
