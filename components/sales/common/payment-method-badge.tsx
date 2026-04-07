@@ -1,6 +1,12 @@
-// components/sales/common/payment-method-badge.tsx
 import { Badge } from '@/components/ui/badge';
-import { PaymentMethod } from '@/types/sales';
+
+export type PaymentMethod =
+    | 'CASH'
+    | 'CREDIT_CARD'
+    | 'DEBIT_CARD'
+    | 'BANK_TRANSFER'
+    | 'MOBILE_MONEY'
+    | 'CREDIT';
 
 interface PaymentMethodBadgeProps {
     method: PaymentMethod | string;
@@ -16,9 +22,9 @@ const paymentMethodConfig: Record<string, { color: string; label: string }> = {
 };
 
 export function PaymentMethodBadge({ method }: PaymentMethodBadgeProps) {
-    const config = paymentMethodConfig[method] || {
+    const config = paymentMethodConfig[method] ?? {
         color: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
-        label: method.replace('_', ' ')
+        label: String(method).replace(/_/g, ' '),
     };
 
     return (

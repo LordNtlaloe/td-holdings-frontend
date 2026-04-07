@@ -4,24 +4,21 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/a
 
 export async function GET(
     request: NextRequest,
-   { params }: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = request.headers.get('Authorization');
         const { id: storeId } = await params;
-        const { searchParams } = new URL(request.url);
 
-        const period = searchParams.get('period') || 'month';
+        // Forward all query parameters
+        const { searchParams } = new URL(request.url);
+        const queryString = searchParams.toString();
 
         console.log('🟦 Store Performance API Route - Forwarding to backend:', `${API_BASE_URL}/stores/${storeId}/performance`);
-        console.log('🟦 Query params:', { period });
+        console.log('🟦 Query string:', queryString);
 
-        // Build query string
-        const queryParams = new URLSearchParams();
-        queryParams.append('period', period);
-
-        // Forward the request to your backend
-        const response = await fetch(`${API_BASE_URL}/stores/${storeId}/performance?${queryParams.toString()}`, {
+        // Forward the request to your backend with all query params
+        const response = await fetch(`${API_BASE_URL}/stores/${storeId}/performance${queryString ? `?${queryString}` : ''}`, {
             method: 'GET',
             headers: {
                 'Authorization': token || '',

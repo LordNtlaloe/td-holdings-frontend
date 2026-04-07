@@ -1,3 +1,4 @@
+// app/(protected)/dashboard/branches/[id]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -61,6 +62,9 @@ export default function StoreDetailPage() {
             setStore(storeData);
             setInventorySummary(inventoryData);
             setPerformance(performanceData);
+            
+            // Log the performance data to see its structure (for debugging)
+            console.log('Performance data:', performanceData);
         } catch (error: any) {
             toast('Error', {
                 description: error.message || 'Failed to load store data',
@@ -88,6 +92,24 @@ export default function StoreDetailPage() {
         } catch (error: any) {
             throw error;
         }
+    };
+
+    // Format period string safely
+    const formatPeriod = (period?: string) => {
+        if (!period) return 'Current';
+        return period.charAt(0).toUpperCase() + period.slice(1);
+    };
+
+    // Safely get period from performance data
+    const getPeriodDisplay = () => {
+        if (!performance) return 'Current Period';
+        
+        // Try different possible property names
+        const period = (performance as any).period || 
+                       (performance as any).timeframe || 
+                       (performance as any).dateRange;
+        
+        return period ? formatPeriod(period) : 'Current Period';
     };
 
     if (loading) {
@@ -322,7 +344,7 @@ export default function StoreDetailPage() {
                                 <CardHeader>
                                     <CardTitle>Sales Performance</CardTitle>
                                     <CardDescription>
-                                        Period: {performance..charAt(0).toUpperCase() + performance.period.slice(1)}
+                                        Period: {getPeriodDisplay()}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -330,26 +352,26 @@ export default function StoreDetailPage() {
                                         <div className="space-y-1">
                                             <p className="text-sm font-medium">Revenue</p>
                                             <p className="text-3xl font-bold">
-                                                ${performance.sales.revenue.toLocaleString()}
+                                                ${performance.sales?.revenue?.toLocaleString() || '0'}
                                             </p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm font-medium">Transactions</p>
                                             <p className="text-3xl font-bold">
-                                                {performance.sales.transactions}
+                                                {performance.sales?.transactions || 0}
                                             </p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm font-medium">Avg. Transaction</p>
                                             <p className="text-3xl font-bold">
-                                                ${performance.sales.averageTransaction.toFixed(2)}
+                                                ${performance.sales?.averageOrderValue?.toFixed(2) || '0.00'}
                                             </p>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {performance && <PerformanceCharts performance={performance} />}
+                            <PerformanceCharts performance={performance} />
                         </div>
                     ) : (
                         <Card>

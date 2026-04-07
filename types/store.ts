@@ -131,3 +131,27 @@ export interface CreateStoreFormValues {
 }
 
 export interface UpdateStoreFormValues extends Partial<CreateStoreFormValues> { }
+
+// Add this to your store types file (where Store is defined)
+export interface PaginatedStoresResponse {
+    data: Store[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+}
+
+export interface StoreFilters {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    storeId?: string;
+    position?: string;
+    activeOnly?: boolean;
+    hireDateFrom?: Date;
+    hireDateTo?: Date;
+    isMainStore?: boolean
+}

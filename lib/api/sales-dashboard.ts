@@ -1,4 +1,4 @@
-// /api/sales-dashboard.ts
+// lib/api/sales-dashboard.ts
 const API_BASE = '/api';
 
 export interface DashboardSummary {
@@ -11,12 +11,12 @@ export interface DashboardSummary {
     week: {
         sales: number;
         revenue: number;
-        growth: number; // percentage compared to last week
+        growth: number;
     };
     month: {
         sales: number;
         revenue: number;
-        growth: number; // percentage compared to last month
+        growth: number;
     };
     pendingVoids: number;
     lowStockAlerts: number;
@@ -47,184 +47,451 @@ export interface StorePerformance {
     revenue: number;
     transactions: number;
     employees: number;
+    activeEmployees?: number;
     target?: number;
-    achievement: number; // percentage
+    achievement: number;
+}
+
+export interface RealtimeUpdates {
+    newSales: number;
+    updatedSales: number[];
+    revenue: number;
+    timestamp: Date;
+    sales?: Array<{
+        id: string;
+        total: number;
+        employee: string;
+        createdAt: Date;
+    }>;
+}
+
+export interface SalesByHour {
+    hour: number;
+    sales: number;
+    revenue: number;
+    transactions: number;
+}
+
+export interface SalesByDay {
+    date: string;
+    sales: number;
+    revenue: number;
+    transactions: number;
+    averageTicket: number;
+}
+
+export interface SalesByDayResponse {
+    period: {
+        start: string;
+        end: string;
+        days: number;
+    };
+    data: SalesByDay[];
+    summary: {
+        totalRevenue: number;
+        totalTransactions: number;
+        averageDailyRevenue: number;
+        averageDailyTransactions: number;
+        averageTicket: number;
+        growth: {
+            revenue: number;
+            transactions: number;
+        };
+    };
+}
+
+export interface SalesByWeek {
+    weekStart: string;
+    weekEnd: string;
+    weekNumber: number;
+    sales: number;
+    revenue: number;
+    transactions: number;
+    activeEmployees: number;
+    averageTicket: number;
+    weekOverWeekGrowth: number;
+}
+
+export interface SalesByWeekResponse {
+    period: {
+        start: string;
+        end: string;
+        weeks: number;
+    };
+    data: SalesByWeek[];
+    summary: {
+        totalRevenue: number;
+        totalTransactions: number;
+        averageWeeklyRevenue: number;
+        averageWeeklyTransactions: number;
+        averageTicket: number;
+        yearOverYearGrowth: number;
+    };
+}
+
+export interface SalesByMonth {
+    month: string;
+    year: number;
+    monthNumber: number;
+    monthName: string;
+    sales: number;
+    revenue: number;
+    transactions: number;
+    activeEmployees: number;
+    uniqueCustomers: number;
+    averageTicket: number;
+    monthOverMonthGrowth: number;
+    movingAverage3Months: number;
+}
+
+export interface SalesByMonthResponse {
+    period: {
+        start: string;
+        end: string;
+        months: number;
+        years: number;
+    };
+    data: SalesByMonth[];
+    yearlyComparison: Array<{
+        year: number;
+        revenue: number;
+        transactions: number;
+        months: number;
+        averageMonthlyRevenue: number;
+        averageTicket: number;
+    }>;
+    summary: {
+        totalRevenue: number;
+        totalTransactions: number;
+        averageMonthlyRevenue: number;
+        averageMonthlyTransactions: number;
+        averageTicket: number;
+    };
+}
+
+export interface SalesByYear {
+    year: number;
+    sales: number;
+    revenue: number;
+    transactions: number;
+    uniqueCustomers: number;
+    activeEmployees: number;
+    activeMonths: number;
+    averageMonthlyRevenue: number;
+    averageTicket: number;
+    yearOverYearGrowth: number;
+}
+
+export interface SalesByYearResponse {
+    period: {
+        start: number;
+        end: number;
+        years: number;
+    };
+    data: SalesByYear[];
+    summary: {
+        totalRevenue: number;
+        totalTransactions: number;
+        averageAnnualRevenue: number;
+        averageAnnualTransactions: number;
+        averageTicket: number;
+        cagr: number;
+        bestYear: {
+            year: number;
+            revenue: number;
+        };
+        worstYear: {
+            year: number;
+            revenue: number;
+        };
+    };
 }
 
 class SalesDashboardAPI {
-    private static async fetchAPI<T>(
-        endpoint: string,
-        token: string,
-        options: RequestInit = {}
-    ): Promise<T> {
+    private static async fetchAPI<T>(endpoint: string, token: string): Promise<T> {
+        const url = `${API_BASE}${endpoint}`;
+        console.log(`🟦 SalesDashboardAPI: GET ${url}`);
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            cache: 'no-store',
+        });
+
+        const responseText = await response.text();
+        let data: any;
+
         try {
-            const url = `${API_BASE}${endpoint}`;
-            const response = await fetch(url, {
-                ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    ...options.headers,
-                },
-                cache: 'no-store',
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return response.json();
-        } catch (error: any) {
-            console.error('🔴 SalesDashboardAPI Error:', error.message);
-            throw error;
+            data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+            throw new Error('Invalid JSON response from server');
         }
+
+        if (!response.ok) {
+            throw new Error(data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return data as T;
     }
 
     /**
-     * Get dashboard summary statistics
+     * GET /api/sales-dashboard/summary
      */
     static async getSummary(
         token: string,
-        params?: {
-            storeId?: string;
-            date?: Date;
-        }
+        params?: { storeId?: string; date?: Date }
     ): Promise<DashboardSummary> {
         const query = new URLSearchParams();
         if (params?.storeId) query.append('storeId', params.storeId);
         if (params?.date) query.append('date', params.date.toISOString());
 
-        const queryString = query.toString();
-        return this.fetchAPI(
-            `/sales/dashboard/summary${queryString ? `?${queryString}` : ''}`,
-            token
-        );
+        const qs = query.toString();
+        return this.fetchAPI(`/sales-dashboard/summary${qs ? `?${qs}` : ''}`, token);
     }
 
     /**
-     * Get recent sales activity
+     * GET /api/sales-dashboard/recent-activity
      */
     static async getRecentActivity(
         token: string,
-        params?: {
-            storeId?: string;
-            limit?: number;
-        }
+        params?: { storeId?: string; limit?: number }
     ): Promise<RecentActivity[]> {
         const query = new URLSearchParams();
         if (params?.storeId) query.append('storeId', params.storeId);
         if (params?.limit) query.append('limit', params.limit.toString());
 
-        const queryString = query.toString();
+        const qs = query.toString();
         const activities = await this.fetchAPI<any[]>(
-            `/sales/dashboard/recent-activity${queryString ? `?${queryString}` : ''}`,
+            `/sales-dashboard/recent-activity${qs ? `?${qs}` : ''}`,
             token
         );
 
-        // Transform dates
-        return activities.map(activity => ({
-            ...activity,
-            timestamp: new Date(activity.timestamp)
-        }));
+        return activities.map(a => ({ ...a, timestamp: new Date(a.timestamp) }));
     }
 
     /**
-     * Get top selling products
+     * GET /api/sales-dashboard/top-products
      */
     static async getTopProducts(
         token: string,
-        params?: {
-            storeId?: string;
-            period?: 'today' | 'week' | 'month';
-            limit?: number;
-        }
+        params?: { storeId?: string; period?: 'today' | 'week' | 'month'; limit?: number }
     ): Promise<TopSellingProduct[]> {
         const query = new URLSearchParams();
         if (params?.storeId) query.append('storeId', params.storeId);
         if (params?.period) query.append('period', params.period);
         if (params?.limit) query.append('limit', params.limit.toString());
 
-        const queryString = query.toString();
-        return this.fetchAPI(
-            `/sales/dashboard/top-products${queryString ? `?${queryString}` : ''}`,
-            token
-        );
+        const qs = query.toString();
+        return this.fetchAPI(`/sales-dashboard/top-products${qs ? `?${qs}` : ''}`, token);
     }
 
     /**
-     * Get store performance metrics
+     * GET /api/sales-dashboard/store-performance
      */
     static async getStorePerformance(
         token: string,
-        params?: {
-            date?: Date;
-        }
+        params?: { date?: Date }
     ): Promise<StorePerformance[]> {
         const query = new URLSearchParams();
         if (params?.date) query.append('date', params.date.toISOString());
 
-        const queryString = query.toString();
-        return this.fetchAPI(
-            `/sales/dashboard/store-performance${queryString ? `?${queryString}` : ''}`,
-            token
-        );
+        const qs = query.toString();
+        return this.fetchAPI(`/sales-dashboard/store-performance${qs ? `?${qs}` : ''}`, token);
     }
 
     /**
-     * Get real-time sales updates (for live dashboard)
+     * GET /api/sales-dashboard/realtime
      */
     static async getRealtimeUpdates(
         token: string,
-        params?: {
-            storeId?: string;
-            since?: Date;
-        }
-    ): Promise<{
-        newSales: number;
-        updatedSales: number[];
-        revenue: number;
-        timestamp: Date;
-    }> {
+        params?: { storeId?: string; since?: Date }
+    ): Promise<RealtimeUpdates> {
         const query = new URLSearchParams();
         if (params?.storeId) query.append('storeId', params.storeId);
         if (params?.since) query.append('since', params.since.toISOString());
 
-        const queryString = query.toString();
+        const qs = query.toString();
         const response = await this.fetchAPI<any>(
-            `/sales/dashboard/realtime${queryString ? `?${queryString}` : ''}`,
+            `/sales-dashboard/realtime${qs ? `?${qs}` : ''}`,
             token
         );
 
-        return {
-            ...response,
-            timestamp: new Date(response.timestamp)
-        };
+        // Convert timestamp strings to Date objects
+        if (response.sales) {
+            response.sales = response.sales.map((sale: any) => ({
+                ...sale,
+                createdAt: new Date(sale.createdAt)
+            }));
+        }
+
+        return { ...response, timestamp: new Date(response.timestamp) };
     }
 
     /**
-     * Get sales by hour (for traffic analysis)
+     * GET /api/sales-dashboard/sales-by-hour
      */
     static async getSalesByHour(
+        token: string,
+        params?: { storeId?: string; date?: Date }
+    ): Promise<SalesByHour[]> {
+        const query = new URLSearchParams();
+        if (params?.storeId) query.append('storeId', params.storeId);
+        if (params?.date) query.append('date', params.date.toISOString());
+
+        const qs = query.toString();
+        return this.fetchAPI(`/sales-dashboard/sales-by-hour${qs ? `?${qs}` : ''}`, token);
+    }
+
+    /**
+     * GET /api/sales-dashboard/sales-by-day
+     */
+    static async getSalesByDay(
+        token: string,
+        params?: {
+            storeId?: string;
+            startDate?: Date;
+            endDate?: Date;
+        }
+    ): Promise<SalesByDayResponse> {
+        const query = new URLSearchParams();
+        if (params?.storeId) query.append('storeId', params.storeId);
+        if (params?.startDate) query.append('startDate', params.startDate.toISOString());
+        if (params?.endDate) query.append('endDate', params.endDate.toISOString());
+
+        const qs = query.toString();
+        const response = await this.fetchAPI<any>(
+            `/sales-dashboard/sales-by-day${qs ? `?${qs}` : ''}`,
+            token
+        );
+
+        // Convert date strings in data array
+        if (response.data) {
+            response.data = response.data.map((item: any) => ({
+                ...item,
+                date: new Date(item.date)
+            }));
+        }
+
+        return response;
+    }
+
+    /**
+     * GET /api/sales-dashboard/sales-by-week
+     */
+    static async getSalesByWeek(
+        token: string,
+        params?: {
+            storeId?: string;
+            year?: number;
+            month?: number;
+        }
+    ): Promise<SalesByWeekResponse> {
+        const query = new URLSearchParams();
+        if (params?.storeId) query.append('storeId', params.storeId);
+        if (params?.year) query.append('year', params.year.toString());
+        if (params?.month) query.append('month', params.month.toString());
+
+        const qs = query.toString();
+        const response = await this.fetchAPI<any>(
+            `/sales-dashboard/sales-by-week${qs ? `?${qs}` : ''}`,
+            token
+        );
+
+        // Convert date strings in data array
+        if (response.data) {
+            response.data = response.data.map((item: any) => ({
+                ...item,
+                weekStart: new Date(item.weekStart),
+                weekEnd: new Date(item.weekEnd)
+            }));
+        }
+
+        return response;
+    }
+
+    /**
+     * GET /api/sales-dashboard/sales-by-month
+     */
+    static async getSalesByMonth(
+        token: string,
+        params?: {
+            storeId?: string;
+            years?: number;
+        }
+    ): Promise<SalesByMonthResponse> {
+        const query = new URLSearchParams();
+        if (params?.storeId) query.append('storeId', params.storeId);
+        if (params?.years) query.append('years', params.years.toString());
+
+        const qs = query.toString();
+        const response = await this.fetchAPI<any>(
+            `/sales-dashboard/sales-by-month${qs ? `?${qs}` : ''}`,
+            token
+        );
+
+        // Convert date strings in data array
+        if (response.data) {
+            response.data = response.data.map((item: any) => ({
+                ...item,
+                month: new Date(item.month)
+            }));
+        }
+
+        return response;
+    }
+
+    /**
+     * GET /api/sales-dashboard/sales-by-year
+     */
+    static async getSalesByYear(
+        token: string,
+        params?: {
+            storeId?: string;
+            startYear?: number;
+            endYear?: number;
+        }
+    ): Promise<SalesByYearResponse> {
+        const query = new URLSearchParams();
+        if (params?.storeId) query.append('storeId', params.storeId);
+        if (params?.startYear) query.append('startYear', params.startYear.toString());
+        if (params?.endYear) query.append('endYear', params.endYear.toString());
+
+        const qs = query.toString();
+        return this.fetchAPI(`/sales-dashboard/sales-by-year${qs ? `?${qs}` : ''}`, token);
+    }
+
+    /**
+     * GET /api/sales-dashboard/all-metrics
+     * Convenience method to fetch multiple dashboard metrics at once
+     */
+    static async getAllMetrics(
         token: string,
         params?: {
             storeId?: string;
             date?: Date;
         }
-    ): Promise<Array<{
-        hour: number;
-        sales: number;
-        revenue: number;
-        transactions: number;
-    }>> {
-        const query = new URLSearchParams();
-        if (params?.storeId) query.append('storeId', params.storeId);
-        if (params?.date) query.append('date', params.date.toISOString());
+    ): Promise<{
+        summary: DashboardSummary;
+        salesByHour: SalesByHour[];
+        topProducts: TopSellingProduct[];
+        recentActivity: RecentActivity[];
+    }> {
+        const [summary, salesByHour, topProducts, recentActivity] = await Promise.all([
+            this.getSummary(token, params),
+            this.getSalesByHour(token, params),
+            this.getTopProducts(token, { ...params, limit: 5 }),
+            this.getRecentActivity(token, { ...params, limit: 10 })
+        ]);
 
-        const queryString = query.toString();
-        return this.fetchAPI(
-            `/sales/dashboard/sales-by-hour${queryString ? `?${queryString}` : ''}`,
-            token
-        );
+        return {
+            summary,
+            salesByHour,
+            topProducts,
+            recentActivity
+        };
     }
 }
 

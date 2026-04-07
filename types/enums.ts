@@ -70,7 +70,6 @@ export enum InventoryChangeType {
 export enum StoreType {
     MAIN = 'MAIN',
     BRANCH = 'BRANCH',
-    OUTLET = 'OUTLET',
     WAREHOUSE = 'WAREHOUSE'
 }
 

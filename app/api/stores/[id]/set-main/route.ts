@@ -10,7 +10,19 @@ export async function POST(
         const token = request.headers.get('Authorization');
         const { id: storeId } = await params;
 
+        // Get request body if any
+        let body;
+        try {
+            body = await request.json();
+        } catch (e) {
+            // No body or invalid JSON, that's fine
+            body = undefined;
+        }
+
         console.log('🟦 Set Main Store API Route - Forwarding to backend:', `${API_BASE_URL}/stores/${storeId}/set-main`);
+        if (body) {
+            console.log('🟦 Request body:', body);
+        }
 
         // Forward the request to your backend
         const response = await fetch(`${API_BASE_URL}/stores/${storeId}/set-main`, {
@@ -19,6 +31,7 @@ export async function POST(
                 'Authorization': token || '',
                 'Content-Type': 'application/json',
             },
+            ...(body && { body: JSON.stringify(body) }),
         });
 
         console.log('🟦 Backend response status:', response.status);
@@ -44,7 +57,7 @@ export async function POST(
         // Try to parse as JSON
         let data;
         try {
-            data = JSON.parse(responseText);
+            data = responseText ? JSON.parse(responseText) : {};
         } catch (parseError) {
             console.error('🔴 Failed to parse backend response as JSON:', parseError);
             console.error('🔴 Response text:', responseText);

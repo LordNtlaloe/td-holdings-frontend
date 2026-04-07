@@ -95,6 +95,8 @@ const routePermissions: Record<Role, string[]> = {
         '/customers/*',
         '/pos'
     ],
+    [Role.SUPERVISOR]: [],
+    [Role.WAREHOUSE]: []
 };
 
 const SYSTEM_ROLES: Role[] = [Role.ADMIN, Role.MANAGER, Role.CASHIER];

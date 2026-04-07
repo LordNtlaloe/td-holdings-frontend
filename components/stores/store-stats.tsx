@@ -33,7 +33,6 @@ const storeTypeIcons = {
     [StoreType.MAIN]: Home,
     [StoreType.BRANCH]: Building,
     [StoreType.WAREHOUSE]: Warehouse,
-    [StoreType.POPUP]: Store,
 };
 
 export function StoreStats({ stats }: StoreStatsProps) {

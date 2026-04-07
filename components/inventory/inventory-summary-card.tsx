@@ -15,28 +15,28 @@ const InventorySummaryCards = ({ summary }: InventorySummaryCardsProps) => {
     const cards = [
         {
             title: 'Total Products',
-            value: summary.totalProducts,
+            value: summary.summary.totalProducts,
             icon: Package,
             color: 'bg-blue-500',
             description: 'Unique products in stock'
         },
         {
             title: 'Total Quantity',
-            value: summary.totalQuantity,
+            value: summary.summary.totalQuantity,
             icon: Package,
             color: 'bg-green-500',
             description: 'Total units in inventory'
         },
         {
             title: 'Total Value',
-            value: InventoryAPI.formatCurrency(summary.totalValue),
+            value: InventoryAPI.formatCurrency(summary.summary.totalValue),
             icon: DollarSign,
             color: 'bg-purple-500',
             description: 'Total inventory value'
         },
         {
             title: 'Low Stock Items',
-            value: summary.lowStockItems,
+            value: summary.summary.lowStockProducts,
             icon: AlertTriangle,
             color: 'bg-yellow-500',
             description: 'Items below reorder level'

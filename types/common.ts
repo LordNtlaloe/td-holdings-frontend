@@ -263,3 +263,25 @@ export interface PhoneNumber {
     number: string;
     formatted?: string;
 }
+
+// Add this to your existing types file
+export interface DashboardSummary {
+    today: {
+        sales: number;
+        revenue: number;
+        transactions: number;
+        averageTicket: number;
+    };
+    week: {
+        sales: number;
+        revenue: number;
+        growth: number;
+    };
+    month: {
+        sales: number;
+        revenue: number;
+        growth: number;
+    };
+    pendingVoids: number;
+    lowStockAlerts: number;
+}

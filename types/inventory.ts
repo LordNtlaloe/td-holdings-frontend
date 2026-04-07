@@ -6,7 +6,6 @@ import { InventoryChangeType, TransferStatus, SortOrder, ProductGrade, ProductTy
 export interface Inventory {
     id: string;
     productId: string;
-    storeId: string;
     quantity: number;
     reorderLevel?: number;
     optimalLevel?: number;
@@ -84,6 +83,7 @@ export interface StockReceipt {
 }
 
 export interface LowStockProduct {
+    store: Store;
     product: Product;
     inventories: Array<{
         storeId: string;
@@ -232,4 +232,14 @@ export interface StoreInventoryResponse {
     page: number;
     totalPages: number;
     store: Store;
+}
+
+export interface StoreInventoryFilters {
+    productId?: string;
+    productName?: string;
+    type?: ProductType;
+    grade?: ProductGrade;
+    lowStock?: boolean;
+    page?: number;
+    limit?: number;
 }

@@ -7,12 +7,13 @@ const API_BASE_URL =
 // GET product availability
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = params;
-    const path = `/products/${id}/availability`;
-
     try {
+        // Await the params in Next.js 15
+        const { id } = await params;
+        const path = `/products/${id}/availability`;
+
         const token = request.headers.get('Authorization');
         const url = `${API_BASE_URL}${path}`;
 
@@ -67,7 +68,6 @@ export async function GET(
             );
         }
 
-        // DON'T wrap again – follow backend contract strictly
         if (!response.ok) {
             return NextResponse.json(
                 {

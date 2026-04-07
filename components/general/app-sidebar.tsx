@@ -17,12 +17,12 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Users',
-        href: '/users',
+        href: '/dashboard/users',
         icon: User,
     },
     {
         title: 'Employees',
-        href: '/employees',
+        href: '/dashboard/employees',
         icon: Users,
     },
     {
@@ -32,17 +32,17 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Products',
-        href: '/products',
+        href: '/dashboard/products',
         icon: Package,
     },
     {
         title: 'Branches',
-        href: '/branches',
+        href: '/dashboard/branches',
         icon: MapPinIcon,
     },
     {
         title: 'Sales',
-        href: '/orders',
+        href: '/dashboard/sales',
         icon: Receipt,
     },
 ];

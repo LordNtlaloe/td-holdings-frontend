@@ -1,13 +1,3 @@
-// COMPLETE FIXED ProductForm Component
-// This is the DEFINITIVE fix for the baleWeight issue
-// 
-// KEY CHANGES:
-// 1. Form fields bind directly to top-level fields (baleWeight, NOT baleSpecific.baleWeight)
-// 2. Schema uses flat structure
-// 3. handleFormSubmit extracts values correctly
-//
-// Replace your entire ProductForm component with this
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -208,7 +198,7 @@ interface ProductFormProps {
     onSubmit: (data: ProductFormData) => Promise<void>;
     onCancel?: () => void;
     isLoading?: boolean;
-    mode: 'create' | 'edit';
+    mode: 'create' | 'edit' | 'assign';
 }
 
 export function ProductForm({

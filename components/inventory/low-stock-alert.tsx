@@ -99,7 +99,7 @@ const LowStockAlert = ({ inventory, threshold = 10, maxItems = 5 }: LowStockAler
                 <div className="space-y-3">
                     {criticalItems.map((item) => (
                         <div
-                            key={`${item.productId}-${item.storeId}`}
+                            key={`${item.productId}-${item.store?.id}`}
                             className={`flex items-center justify-between p-3 rounded-lg border ${getUrgencyColor(item)}`}
                         >
                             <div className="flex-1">

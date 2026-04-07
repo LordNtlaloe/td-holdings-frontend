@@ -157,7 +157,7 @@ export function ProductTable({
 
         if (mainStore) {
             result.push({
-                storeId: mainStore.storeId,
+                storeId: mainStore.store?.id,
                 storeName: mainStore.store?.name || 'Main Store',
                 isMainStore: true,
                 quantity: mainStore.quantity,
@@ -169,8 +169,8 @@ export function ProductTable({
 
         branchStores.forEach(inv => {
             result.push({
-                storeId: inv.storeId,
-                storeName: inv.store?.name || `Store ${inv.storeId}`,
+                storeId: inv.store?.id,
+                storeName: inv.store?.name || `Store ${inv.store?.id}`,
                 isMainStore: false,
                 quantity: inv.quantity,
                 reorderLevel: inv.reorderLevel,

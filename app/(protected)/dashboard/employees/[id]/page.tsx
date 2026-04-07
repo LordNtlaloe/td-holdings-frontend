@@ -118,8 +118,11 @@ export default function EmployeeDetailPage() {
 
             setEmployee(employeeData as EmployeeWithStore);
             setReviews(reviewsData?.reviews || []);
-            setTransfers(transfersData?.transfers || []);
-
+            setTransfers(
+                (transfersData?.transfers || []).filter(
+                    (t: EmployeeTransfer) => t.fromStore && t.toStore
+                ) as EmployeeTransferWithStores[]
+            );
             // Try to load performance data
             try {
                 const performanceData = await EmployeeAPI.getEmployeePerformance(accessToken, employeeId, 'month');
@@ -185,7 +188,7 @@ export default function EmployeeDetailPage() {
         if (!accessToken || !employee) return;
 
         try {
-            const blob = await EmployeeAPI.exportEmployeePerformance(accessToken, employee.id, 'month');
+            const blob = await EmployeeAPI.getEmployeePerformance(accessToken, employee.id, 'month');
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -411,7 +414,7 @@ export default function EmployeeDetailPage() {
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{employee.store?.location || 'No location specified'}</span>
+                                                        <span>{employee.store?.address || 'No location specified'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -680,7 +683,7 @@ export default function EmployeeDetailPage() {
                                     Add Review
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[700px]">
+                            <DialogContent className="sm:max-w-175">
                                 <DialogHeader>
                                     <DialogTitle>Add Performance Review</DialogTitle>
                                     <DialogDescription>
@@ -874,7 +877,7 @@ export default function EmployeeDetailPage() {
 
             {/* Edit Dialog */}
             <Dialog open={editing} onOpenChange={setEditing}>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-150">
                     <DialogHeader>
                         <DialogTitle>Edit Employee</DialogTitle>
                         <DialogDescription>

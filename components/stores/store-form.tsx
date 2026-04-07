@@ -160,7 +160,6 @@ export function StoreForm({ store, onSubmit, onCancel, isLoading = false, mode =
                                         <SelectItem value={StoreType.MAIN}>Main Store</SelectItem>
                                         <SelectItem value={StoreType.BRANCH}>Branch</SelectItem>
                                         <SelectItem value={StoreType.WAREHOUSE}>Warehouse</SelectItem>
-                                        <SelectItem value={StoreType.POPUP}>Pop-up Store</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

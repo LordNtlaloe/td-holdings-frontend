@@ -1,4 +1,4 @@
-// app/api/stores/[storeId]/inventory/route.ts
+// app/api/stores/[id]/inventory/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -95,9 +95,9 @@ async function forwardRequest(
 // GET - Get store inventory
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ storeId: string }> }
+    { params }: { params: Promise<{ id: string }> } // Changed from storeId to id
 ) {
-    const { storeId } = await params;
-    const path = `/stores/${storeId}/inventory`;
+    const { id } = await params; // This will be the store ID from the URL
+    const path = `/stores/${id}/inventory`;
     return forwardRequest(request, path);
 }

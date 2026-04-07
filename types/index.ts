@@ -9,6 +9,7 @@ export * from './inventory';
 export * from './employees';
 export * from './sales';
 export * from './cart';
+export * from './auth'
 
 // Re-export commonly used types
 export type { ApiResponse, PaginatedResponse } from './api';

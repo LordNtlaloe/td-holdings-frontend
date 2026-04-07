@@ -121,7 +121,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
         }
 
         if (storeId) {
-            const inventory = product?.inventories.find(inv => inv.storeId === storeId);
+            const inventory = product?.inventories.find(inv => inv.store?.id === storeId);
             return inventory?.quantity || 0;
         } else {
             return product?.inventories.reduce((sum, inv) => sum + inv.quantity, 0);

@@ -23,7 +23,7 @@ export const transformProductToFormData = (product: Product): ProductFormData =>
         importDate: product.importDate,
         // Transform inventories
         storeAssignments: product.inventories?.map(inv => ({
-            storeId: inv.storeId,
+            storeId: inv.store?.id as string,
             store: inv.store,
             quantity: inv.quantity,
             reorderLevel: inv.reorderLevel,

@@ -1,24 +1,14 @@
-// components/sales/common/sales-table.tsx
 'use client';
 
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Eye, FileText, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -54,20 +44,19 @@ export function SalesTable({
         );
     }
 
-    // Helper function to safely format date
     const formatDate = (date: Date | string) => {
         try {
-            const dateObj = date instanceof Date ? date : new Date(date);
-            return format(dateObj, 'MMM dd, yyyy HH:mm');
-        } catch (error) {
+            const d = date instanceof Date ? date : new Date(date);
+            return format(d, 'MMM dd, yyyy HH:mm');
+        } catch {
             return 'Invalid date';
         }
     };
 
-    // Helper function to get item count
-    const getItemCount = (sale: Sale) => {
-        return sale.saleItems?.length || sale._count?.saleItems || 0;
-    };
+    const getItemCount = (sale: Sale) =>
+        sale.saleItems?.length ?? (sale as any)._count?.saleItems ?? 0;
+
+    const extraCols = (showEmployee ? 1 : 0) + (showStore ? 1 : 0);
 
     return (
         <div className="rounded-md border">
@@ -89,7 +78,10 @@ export function SalesTable({
                 <TableBody>
                     {sales.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={showEmployee && showStore ? 10 : 8} className="text-center py-8 text-muted-foreground">
+                            <TableCell
+                                colSpan={8 + extraCols}
+                                className="text-center py-8 text-muted-foreground"
+                            >
                                 No sales found
                             </TableCell>
                         </TableRow>
@@ -99,21 +91,17 @@ export function SalesTable({
                                 <TableCell className="font-medium">
                                     #{sale.id.slice(-8).toUpperCase()}
                                 </TableCell>
-                                <TableCell>
-                                    {formatDate(sale.createdAt)}
-                                </TableCell>
+                                <TableCell>{formatDate(sale.createdAt)}</TableCell>
                                 {showEmployee && (
                                     <TableCell>
-                                        {sale.employee?.user?.firstName || 'N/A'}
+                                        {sale.employee?.user?.firstName ?? 'N/A'}
                                     </TableCell>
                                 )}
                                 {showStore && (
-                                    <TableCell>
-                                        {sale.store?.name || 'N/A'}
-                                    </TableCell>
+                                    <TableCell>{sale.store?.name ?? 'N/A'}</TableCell>
                                 )}
                                 <TableCell>
-                                    {sale.customerName || (
+                                    {sale.customerName ?? (
                                         <span className="text-muted-foreground">Walk-in</span>
                                     )}
                                 </TableCell>
@@ -122,7 +110,7 @@ export function SalesTable({
                                     {sale.total.toLocaleString()} FCFA
                                 </TableCell>
                                 <TableCell>
-                                    <PaymentMethodBadge method={sale.paymentMethod as any} />
+                                    <PaymentMethodBadge method={sale.paymentMethod} />
                                 </TableCell>
                                 <TableCell>
                                     {sale.voidedSale ? (
@@ -141,12 +129,10 @@ export function SalesTable({
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuItem onClick={() => onViewDetails(sale)}>
-                                                <Eye className="mr-2 h-4 w-4" />
-                                                View Details
+                                                <Eye className="mr-2 h-4 w-4" /> View Details
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => onPrintReceipt(sale)}>
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                Print Receipt
+                                                <FileText className="mr-2 h-4 w-4" /> Print Receipt
                                             </DropdownMenuItem>
                                             {!sale.voidedSale && (
                                                 <>
@@ -155,8 +141,7 @@ export function SalesTable({
                                                         onClick={() => onVoidSale(sale)}
                                                         className="text-red-600"
                                                     >
-                                                        <AlertCircle className="mr-2 h-4 w-4" />
-                                                        Void Sale
+                                                        <AlertCircle className="mr-2 h-4 w-4" /> Void Sale
                                                     </DropdownMenuItem>
                                                 </>
                                             )}

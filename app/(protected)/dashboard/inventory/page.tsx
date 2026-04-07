@@ -116,7 +116,7 @@ const InventoryDashboard = () => {
                 limit: 50,
                 page: 1
             });
-            setStores(response.stores || []);
+            setStores(response.data || []);
         } catch (err) {
             console.error('Failed to load stores:', err);
         }

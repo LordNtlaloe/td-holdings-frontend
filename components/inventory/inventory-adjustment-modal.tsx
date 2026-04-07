@@ -48,7 +48,7 @@ const InventoryAdjustmentModal = ({
     const [loadingData, setLoadingData] = useState(false);
     const [formData, setFormData] = useState({
         productId: inventory?.productId || '',
-        storeId: inventory?.storeId || '',
+        storeId: inventory?.store?.id || '',
         quantity: 0,
         changeType: 'PURCHASE' as InventoryChangeType,
         notes: '',
@@ -66,7 +66,7 @@ const InventoryAdjustmentModal = ({
         if (inventory) {
             setFormData({
                 productId: inventory.productId,
-                storeId: inventory.storeId,
+                storeId: inventory.store?.id as string,
                 quantity: 0,
                 changeType: InventoryAPI.getSuggestedChangeType(0),
                 notes: '',
@@ -132,7 +132,7 @@ const InventoryAdjustmentModal = ({
                 if (Array.isArray(storesResponse)) {
                     storesList = storesResponse;
                 } else if (storesResponse && typeof storesResponse === 'object') {
-                    storesList = storesResponse.stores ||
+                    storesList = storesResponse.data ||
                         storesResponse.data ||
                         Object.values(storesResponse).find(val => Array.isArray(val)) ||
                         [];
@@ -215,7 +215,7 @@ const InventoryAdjustmentModal = ({
 
     return (
         <Dialog open onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-125 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         {inventory ? 'Adjust Inventory' : 'Add Inventory'}
@@ -271,7 +271,7 @@ const InventoryAdjustmentModal = ({
                                                 />
                                             </SelectTrigger>
                                             {products.length > 0 && (
-                                                <SelectContent className="max-h-[200px]">
+                                                <SelectContent className="max-h-50">
                                                     {products.map(product => (
                                                         <SelectItem
                                                             key={product.id}
@@ -326,7 +326,7 @@ const InventoryAdjustmentModal = ({
                                                 />
                                             </SelectTrigger>
                                             {stores.length > 0 && (
-                                                <SelectContent className="max-h-[200px]">
+                                                <SelectContent className="max-h-50">
                                                     {stores.map(store => (
                                                         <SelectItem
                                                             key={store.id}
@@ -335,7 +335,7 @@ const InventoryAdjustmentModal = ({
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium">{store.name}</span>
                                                                 <span className="text-xs text-muted-foreground">
-                                                                    {store.location}
+                                                                    {store.address}
                                                                     {store.isMainStore && ' • Main Store'}
                                                                 </span>
                                                             </div>

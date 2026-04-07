@@ -55,6 +55,8 @@ export interface EmployeeTransfer {
 }
 
 export interface PerformanceReview {
+    reviewDate: string | number | Date;
+    comments: string;
     id: string;
     employeeId: string;
     reviewerId: string;
@@ -227,6 +229,7 @@ export interface TransferEmployeeFormValues {
 }
 
 export interface PerformanceReviewFormValues {
+    reviewDate: string | number | readonly string[] | undefined;
     period: ReviewPeriod;
     score: number;
     feedback?: string;

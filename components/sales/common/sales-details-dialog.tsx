@@ -1,20 +1,10 @@
-// components/sales/common/sale-details-dialog.tsx
 'use client';
 
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
+    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -22,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Sale } from '@/types/sales';
 import { PaymentMethodBadge } from './payment-method-badge';
-import { User, Store, Calendar, Hash, CreditCard } from 'lucide-react';
+import { User, Store, Calendar, Hash } from 'lucide-react';
 
 interface SaleDetailsDialogProps {
     sale: Sale | null;
@@ -38,35 +28,29 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
             <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Sale Details</DialogTitle>
-                    <DialogDescription>
-                        Complete information about this transaction
-                    </DialogDescription>
+                    <DialogDescription>Complete information about this transaction</DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-6">
-                    {/* Header Info */}
+                    {/* Invoice + date */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <div className="flex items-center text-sm text-muted-foreground">
-                                <Hash className="mr-2 h-4 w-4" />
-                                Invoice Number
+                                <Hash className="mr-2 h-4 w-4" /> Invoice Number
                             </div>
                             <p className="font-medium">#{sale.id.slice(-8).toUpperCase()}</p>
                         </div>
                         <div className="space-y-1">
                             <div className="flex items-center text-sm text-muted-foreground">
-                                <Calendar className="mr-2 h-4 w-4" />
-                                Date & Time
+                                <Calendar className="mr-2 h-4 w-4" /> Date & Time
                             </div>
-                            <p className="font-medium">
-                                {format(new Date(sale.createdAt), 'PPP p')}
-                            </p>
+                            <p className="font-medium">{format(new Date(sale.createdAt), 'PPP p')}</p>
                         </div>
                     </div>
 
                     <Separator />
 
-                    {/* Customer & Employee Info */}
+                    {/* Customer + employee */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <h4 className="text-sm font-medium">Customer Information</h4>
@@ -89,11 +73,12 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
                             <div className="space-y-1">
                                 <div className="flex items-center text-sm">
                                     <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                                    {sale.employee?.user?.firstName|| 'Unknown'}&nbsp;{sale.employee?.user?.lastName|| 'Unknown'} 
+                                    {sale.employee?.user?.firstName ?? 'Unknown'}&nbsp;
+                                    {sale.employee?.user?.lastName ?? ''}
                                 </div>
                                 <div className="flex items-center text-sm">
                                     <Store className="mr-2 h-4 w-4 text-muted-foreground" />
-                                    {sale.store?.name || 'Unknown'}
+                                    {sale.store?.name ?? 'Unknown'}
                                 </div>
                             </div>
                         </div>
@@ -101,7 +86,7 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
 
                     <Separator />
 
-                    {/* Payment Info */}
+                    {/* Payment + totals */}
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             <h4 className="text-sm font-medium mb-1">Payment Method</h4>
@@ -129,6 +114,7 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
                         </div>
                     </div>
 
+                    {/* Void info */}
                     {sale.voidedSale && (
                         <>
                             <Separator />
@@ -136,7 +122,9 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
                                 <h4 className="text-sm font-medium text-red-600">Void Information</h4>
                                 <p className="text-sm">Reason: {sale.voidedSale.reason}</p>
                                 <p className="text-sm text-muted-foreground">
-                                    Voided by: {sale.voidedSale.voidedByUser?.firstName || 'Unknown'}&nbsp;Voided by: {sale.voidedSale.voidedByUser?.lastName || 'Unknown'} on{' '}
+                                    Voided by:{' '}
+                                    {sale.voidedSale.voidedByUser?.firstName ?? 'Unknown'}&nbsp;
+                                    {sale.voidedSale.voidedByUser?.lastName ?? ''} on{' '}
                                     {format(new Date(sale.voidedSale.createdAt), 'PPP p')}
                                 </p>
                             </div>
@@ -145,10 +133,10 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
 
                     <Separator />
 
-                    {/* Items Table */}
+                    {/* Items */}
                     <div>
                         <h4 className="text-sm font-medium mb-3">Items</h4>
-                        <ScrollArea className="h-50">
+                        <ScrollArea className="h-48">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -161,9 +149,11 @@ export function SaleDetailsDialog({ sale, open, onOpenChange }: SaleDetailsDialo
                                 <TableBody>
                                     {sale.saleItems?.map((item) => (
                                         <TableRow key={item.id}>
-                                            <TableCell>{item.product?.name || 'Unknown Product'}</TableCell>
+                                            <TableCell>{item.product?.name ?? 'Unknown Product'}</TableCell>
                                             <TableCell className="text-right">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">{item.price.toLocaleString()} FCFA</TableCell>
+                                            <TableCell className="text-right">
+                                                {item.price.toLocaleString()} FCFA
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 {(item.quantity * item.price).toLocaleString()} FCFA
                                             </TableCell>

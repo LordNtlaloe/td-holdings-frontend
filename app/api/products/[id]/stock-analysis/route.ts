@@ -7,16 +7,17 @@ const API_BASE_URL =
 // GET product stock analysis
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = params;
-
-    const { searchParams } = new URL(request.url);
-    const queryString = searchParams.toString();
-
-    const path = `/products/${id}/stock-analysis${queryString ? `?${queryString}` : ''}`;
-
     try {
+        // Await the params in Next.js 15
+        const { id } = await params;
+
+        const { searchParams } = new URL(request.url);
+        const queryString = searchParams.toString();
+
+        const path = `/products/${id}/stock-analysis${queryString ? `?${queryString}` : ''}`;
+
         const token = request.headers.get('Authorization');
         const url = `${API_BASE_URL}${path}`;
 

@@ -377,7 +377,8 @@ export default function CartPage() {
                                                                     <div className="text-sm text-gray-500">
                                                                         LSL {unitPrice} each
                                                                     </div>
-                                                                    {item.discount > 0 && (
+                                                                    {/* FIX: Add check for discount existence */}
+                                                                    {item.discount && item.discount > 0 && (
                                                                         <div className="text-sm text-green-600">
                                                                             -LSL {item.discount.toFixed(2)} discount
                                                                         </div>

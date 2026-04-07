@@ -1,4 +1,3 @@
-// components/sales/common/date-range-picker.tsx
 'use client';
 
 import * as React from 'react';
@@ -31,9 +30,9 @@ export function DateRangePicker({
                 <PopoverTrigger asChild>
                     <Button
                         id="date"
-                        variant={'outline'}
+                        variant="outline"
                         className={cn(
-                            'w-75 justify-start text-left font-normal',
+                            'w-72 justify-start text-left font-normal',
                             !dateRange && 'text-muted-foreground'
                         )}
                     >
@@ -41,7 +40,7 @@ export function DateRangePicker({
                         {dateRange?.from ? (
                             dateRange.to ? (
                                 <>
-                                    {format(dateRange.from, 'LLL dd, y')} -{' '}
+                                    {format(dateRange.from, 'LLL dd, y')} –{' '}
                                     {format(dateRange.to, 'LLL dd, y')}
                                 </>
                             ) : (

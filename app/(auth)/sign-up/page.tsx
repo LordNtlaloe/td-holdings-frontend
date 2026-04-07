@@ -69,7 +69,7 @@ export default function RegisterPage() {
                 password: values.password,
                 firstName: values.firstName,
                 lastName: values.lastName,
-                phone: values.phone,
+                phoneNumber: values.phone,
                 role: values.role
             });
 

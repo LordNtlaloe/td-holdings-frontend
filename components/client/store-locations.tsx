@@ -63,7 +63,6 @@ const storeTypeDisplay: Record<StoreType, string> = {
     [StoreType.MAIN]: 'Main Store',
     [StoreType.BRANCH]: 'Branch',
     [StoreType.WAREHOUSE]: 'Warehouse',
-    [StoreType.POPUP]: 'Pop-up Store'
 };
 
 // Map StoreType to icons
@@ -71,7 +70,6 @@ const storeTypeIcons: Record<StoreType, any> = {
     [StoreType.MAIN]: Home,
     [StoreType.BRANCH]: Building,
     [StoreType.WAREHOUSE]: Warehouse,
-    [StoreType.POPUP]: StoreIcon
 };
 
 // Map StoreType to colors
@@ -79,7 +77,6 @@ const storeTypeColors: Record<StoreType, string> = {
     [StoreType.MAIN]: 'bg-[#1b2358] hover:bg-[#151d4a]',
     [StoreType.BRANCH]: 'bg-[#FBB320] hover:bg-[#e6a21c] text-[#1b2358]',
     [StoreType.WAREHOUSE]: 'bg-purple-500 hover:bg-purple-600',
-    [StoreType.POPUP]: 'bg-green-500 hover:bg-green-600'
 };
 
 // Default location for Lesotho (Maseru)

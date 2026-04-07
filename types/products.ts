@@ -231,3 +231,21 @@ export interface ProductFormData {
 
     isActive?: boolean;
 }
+
+export interface PaginatedProductsResponse {
+    data: Product[];
+    meta: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+    };
+    summary?: {
+        totalValue?: number;
+        averagePrice?: number;
+        lowStockCount?: number;
+        outOfStockCount?: number;
+    };
+}

@@ -1,4 +1,4 @@
-// app/(dashboard)/products/[id]/page.tsx
+// app/(protected)/dashboard/products/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -18,7 +18,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
     ArrowLeft,
@@ -26,12 +25,8 @@ import {
     Store as StoreIcon,
     Package,
     DollarSign,
-    BarChart3,
     History,
     Warehouse,
-    AlertTriangle,
-    Share2,
-    Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -68,7 +63,7 @@ function ProductDetailContent() {
             ]);
 
             setProduct(productData);
-            setStores(storesData.stores || []);
+            setStores(storesData.data || []);
         } catch (error: any) {
             toast.error("Error", {
                 description: error.message || "Failed to load product data",
@@ -136,12 +131,21 @@ function ProductDetailContent() {
     const gradeInfo = ProductAPI.getProductGradeInfo(product.grade);
 
     const inventoryByStore = product.inventories?.reduce((acc, inv) => {
-        const store = stores.find(s => s.id === inv.storeId);
+        const store = stores.find(s => s.id === inv.store?.id);
         return {
             ...acc,
-            [store?.name || inv.storeId]: inv.quantity
+            [store?.name || inv.store?.id || '']: inv.quantity,
         };
     }, {} as Record<string, number>) || {};
+
+    // Normalize product inventories to match ProductFormProduct shape
+    const productForForm = {
+        ...product,
+        inventories: product.inventories?.map(inv => ({
+            ...inv,
+            storeId: inv.store?.id ?? '',
+        })),
+    };
 
     return (
         <div className="space-y-6">
@@ -438,7 +442,7 @@ function ProductDetailContent() {
 
             {/* Edit Dialog */}
             <Dialog open={editing} onOpenChange={setEditing}>
-                <DialogContent className="sm:max-w-[700px]">
+                <DialogContent className="sm:max-w-175">
                     <DialogHeader>
                         <DialogTitle>Edit Product</DialogTitle>
                         <DialogDescription>
@@ -447,7 +451,8 @@ function ProductDetailContent() {
                     </DialogHeader>
                     <ProductForm
                         mode="edit"
-                        product={product}
+                        product={productForForm}
+                        stores={stores}
                         onSubmit={handleUpdateProduct}
                         onCancel={() => setEditing(false)}
                     />
@@ -456,7 +461,7 @@ function ProductDetailContent() {
 
             {/* Assign Dialog */}
             <Dialog open={assigning} onOpenChange={setAssigning}>
-                <DialogContent className="sm:max-w-[700px]">
+                <DialogContent className="sm:max-w-175">
                     <DialogHeader>
                         <DialogTitle>Assign Product to Stores</DialogTitle>
                         <DialogDescription>
@@ -465,7 +470,7 @@ function ProductDetailContent() {
                     </DialogHeader>
                     <ProductForm
                         mode="assign"
-                        product={product}
+                        product={productForForm}
                         stores={stores}
                         onSubmit={handleAssignToStores}
                         onCancel={() => setAssigning(false)}

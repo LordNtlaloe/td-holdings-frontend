@@ -14,6 +14,7 @@ import { AdminSalesDashboard } from '@/components/sales/admin/admin-sales-dashbo
 import StoreAPI from '@/lib/api/stores';
 import { toast } from 'sonner';
 
+
 export default function SalesPage() {
     const { user, accessToken, isLoading, isAuthenticated } = useAuth();
     const router = useRouter();
@@ -47,7 +48,7 @@ export default function SalesPage() {
                     
                     // Option 2: If stores have a managerId field
                     const managerStoreIds = stores
-                        .map(store => store.id);
+                        .map((store: { id: any; }) => store.id);
                     
                     // Option 3: Fallback to user's primary store
                     if (managerStoreIds.length === 0 && user.storeId) {

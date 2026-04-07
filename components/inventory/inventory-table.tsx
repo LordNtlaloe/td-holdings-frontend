@@ -82,7 +82,7 @@ const InventoryTable = ({
                                 const reorderInfo = needsReorder(item);
 
                                 return (
-                                    <TableRow key={`${item.productId}-${item.storeId}`}>
+                                    <TableRow key={`${item.productId}-${item.store?.id}`}>
                                         <TableCell className="font-medium">
                                             <div>
                                                 <div className="font-semibold">{item.product?.name || 'Unknown Product'}</div>

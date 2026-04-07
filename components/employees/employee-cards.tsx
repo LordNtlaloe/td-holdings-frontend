@@ -9,7 +9,6 @@ import {
     User,
     Building,
     Briefcase,
-    DollarSign,
     Target,
     Calendar,
     MapPin,
@@ -67,7 +66,8 @@ export function EmployeeCard({
         }
     };
 
-    const getInitials = (name: string) => {
+    const getInitials = (name?: string) => {
+        if (!name) return '?';
         return name
             .split(' ')
             .map(part => part[0])
@@ -76,6 +76,8 @@ export function EmployeeCard({
             .slice(0, 2);
     };
 
+    const fullName = [employee.user?.firstName, employee.user?.lastName].filter(Boolean).join(' ') || 'Unknown';
+
     if (compact) {
         return (
             <Card className="hover:shadow-md transition-shadow">
@@ -83,13 +85,13 @@ export function EmployeeCard({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
-                                <AvatarImage src={employee.user.avatar} />
+                                <AvatarImage src={employee.user?.avatar} />
                                 <AvatarFallback>
-                                    {getInitials(employee.user.firstName)}{getInitials(employee.user.lastName)}
+                                    {getInitials(employee.user?.firstName)}{getInitials(employee.user?.lastName)}
                                 </AvatarFallback>
                             </Avatar>
                             <div>
-                                <p className="font-medium">{employee.user.firstName}&nbsp;{employee.user.lastName}</p>
+                                <p className="font-medium">{fullName}</p>
                                 <p className="text-sm text-muted-foreground">{employee.position}</p>
                             </div>
                         </div>
@@ -113,13 +115,13 @@ export function EmployeeCard({
                 <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={employee.user.avatar} />
+                            <AvatarImage src={employee.user?.avatar} />
                             <AvatarFallback>
-                                    {getInitials(employee.user.firstName)}{getInitials(employee.user.lastName)}
+                                {getInitials(employee.user?.firstName)}{getInitials(employee.user?.lastName)}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <CardTitle className="text-lg">{employee.user.firstName}&nbsp;{employee.user.lastName}</CardTitle>
+                            <CardTitle className="text-lg">{fullName}</CardTitle>
                             <CardDescription className="flex items-center gap-2">
                                 <Briefcase className="h-3 w-3" />
                                 {employee.position}
@@ -169,11 +171,11 @@ export function EmployeeCard({
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm">
                                 <Building className="h-4 w-4 text-muted-foreground" />
-                                <span>{employee.store.name}</span>
+                                <span>{employee.store?.name ?? '—'}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground">{employee.store.location}</span>
+                                <span className="text-muted-foreground">{employee.store?.address ?? '—'}</span>
                             </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
@@ -190,11 +192,11 @@ export function EmployeeCard({
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm">
                                 <Mail className="h-4 w-4 text-muted-foreground" />
-                                <span>{employee.user.email}</span>
+                                <span>{employee.user?.email ?? '—'}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 <Phone className="h-4 w-4 text-muted-foreground" />
-                                <span>{employee.user.phone}</span>
+                                <span>{employee.user?.phone ?? '—'}</span>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -208,22 +210,18 @@ export function EmployeeCard({
                     {employee._count && (
                         <div className="grid grid-cols-3 gap-4 pt-3 border-t">
                             <div className="text-center">
-                                <div className="font-semibold">
-                                    {employee._count.sales || 0}
-                                </div>
+                                <div className="font-semibold">{employee._count.sales ?? 0}</div>
                                 <p className="text-xs text-muted-foreground">Sales</p>
                             </div>
                             <div className="text-center">
-                                <div className="font-semibold">
-                                    {employee._count.sales || 0}
-                                </div>
+                                <div className="font-semibold">{employee._count.sales ?? 0}</div>
                                 <p className="text-xs text-muted-foreground">Transactions</p>
                             </div>
                             <div className="text-center">
                                 <div className="flex items-center justify-center gap-1">
                                     <Target className="h-4 w-4" />
                                     <span className="font-semibold">
-                                        {employee.performanceScore?.toFixed(1) || 'N/A'}%
+                                        {employee.performanceReviews?.[0]?.score?.toFixed(1) ?? 'N/A'}
                                     </span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">Performance</p>

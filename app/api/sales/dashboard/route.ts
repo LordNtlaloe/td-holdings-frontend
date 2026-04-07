@@ -9,17 +9,27 @@ export async function GET(request: NextRequest) {
     searchParams.delete('type');
 
     const queryString = searchParams.toString();
-    const path = `/sales/dashboard/${dashboardType}${queryString ? `?${queryString}` : ''}`;
+
+    // FIX: Map frontend /sales/dashboard to backend /sales-dashboard
+    // This maps:
+    // /api/sales/dashboard?type=summary -> /sales-dashboard/summary
+    // /api/sales/dashboard?type=recent-activity -> /sales-dashboard/recent-activity
+    // etc.
+    const path = `/sales-dashboard/${dashboardType}${queryString ? `?${queryString}` : ''}`;
 
     try {
         const token = request.headers.get('Authorization');
         const url = `${API_BASE_URL}${path}`;
+
+        // Add logging for debugging
+        console.log(`🔍 Proxying: ${request.url} -> ${url}`);
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
         };
 
         if (token) {
+            // Pass the token exactly as received (should include "Bearer " prefix)
             headers['Authorization'] = token;
         }
 
@@ -31,7 +41,9 @@ export async function GET(request: NextRequest) {
 
         const responseText = await response.text();
 
+        // Check for HTML error pages
         if (responseText.trim().startsWith('<!DOCTYPE') || responseText.includes('<html>')) {
+            console.error(`🔴 Backend returned HTML for ${url}`);
             return NextResponse.json({
                 success: false,
                 error: 'Backend server error',
@@ -43,6 +55,7 @@ export async function GET(request: NextRequest) {
         try {
             data = responseText ? JSON.parse(responseText) : {};
         } catch (parseError) {
+            console.error(`🔴 Invalid JSON from ${url}:`, responseText.substring(0, 200));
             return NextResponse.json({
                 success: false,
                 error: 'Invalid response',
@@ -61,6 +74,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(data, { status: response.status });
     } catch (error: any) {
         console.error('API Route Error:', error);
+
+        // Check for connection refused errors
+        if (error.code === 'ECONNREFUSED') {
+            return NextResponse.json({
+                success: false,
+                error: 'Backend connection failed',
+                message: 'Unable to connect to backend server. Please ensure it is running.'
+            }, { status: 503 });
+        }
+
         return NextResponse.json({
             success: false,
             error: 'Internal server error',

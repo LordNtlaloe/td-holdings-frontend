@@ -7,12 +7,9 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import StoreAPI from '@/lib/api/stores';
 import { cookies } from 'next/headers';
+import { Store } from '@/types';
 
-interface Store {
-    id: string;
-    name: string;
-    isMainStore: boolean;
-}
+
 
 async function getStores(): Promise<Store[]> {
     try {
@@ -24,7 +21,7 @@ async function getStores(): Promise<Store[]> {
         }
 
         const response = await StoreAPI.getStores(accessToken, { limit: 100 });
-        return response.stores || [];
+        return response.data || [];
     } catch (error) {
         console.error('Failed to fetch stores:', error);
         return [];
@@ -51,7 +48,7 @@ export default async function ProductsLayout({
             <div className="flex flex-col lg:flex-row gap-6 mt-6 w-full">
                 {/* Sidebar - Only show for admin users */}
                 {isAdmin && (
-                    <aside className="lg:w-64 flex-shrink-0">
+                    <aside className="lg:w-64 shrink-0">
                         <div className="sticky top-6 space-y-2">
                             <h3 className="font-semibold text-sm px-2">Filter by Store</h3>
                             <nav className="flex flex-col space-y-1">

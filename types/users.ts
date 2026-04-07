@@ -17,7 +17,7 @@ export interface User {
     avatar: string;
     isActive: boolean;
     isVerified: boolean;
-    lastLogin?: string | Date;
+    lastLogin?: string;
     storeId?: string;
     store?: Store;
     createdAt: string;
@@ -157,4 +157,85 @@ export interface ProfileFormValues {
     firstName: string;
     lastName: string;
     phone: string;
+}
+
+export interface ChangePasswordData {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}
+
+export interface ResetPasswordRequestData {
+    email: string;
+}
+
+export interface ResetPasswordData {
+    token: string;
+    newPassword: string;
+    confirmPassword: string;
+}
+
+export interface UsersResponse {
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+export interface UserFilters {
+    role?: string;
+    isActive?: string;
+    search?: string;
+    page: number;
+    limit: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+export interface UserStats {
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    byRole: Array<{ role: string; count: number }>;
+    recentLogins: number;
+    newUsersThisMonth: number;
+}
+
+export interface UserSession {
+    id: string;
+    userId: string;
+    token: string;
+    device?: string;
+    browser?: string;
+    os?: string;
+    ipAddress?: string;
+    location?: string;
+    lastActive: string;
+    createdAt: string;
+    expiresAt: string;
+    isCurrent: boolean;
+}
+
+export interface BulkOperationResult {
+    success: boolean;
+    successful: string[];
+    failed: Array<{
+        id: string;
+        error: string;
+    }>;
+    message: string;
+}
+
+export interface ApiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+    meta?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
 }

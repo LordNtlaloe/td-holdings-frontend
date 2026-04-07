@@ -36,7 +36,7 @@ const InventoryLevelsSettings = ({ inventory, onSuccess }: InventoryLevelsSettin
         // Validation
         const validation = InventoryAPI.validateLevelsData({
             productId: inventory.productId,
-            storeId: inventory.storeId,
+            storeId: inventory.store?.id as string,
             reorderLevel: formData.reorderLevel ? Number(formData.reorderLevel) : undefined,
             optimalLevel: formData.optimalLevel ? Number(formData.optimalLevel) : undefined,
             storePrice: formData.storePrice ? Number(formData.storePrice) : undefined
@@ -52,7 +52,7 @@ const InventoryLevelsSettings = ({ inventory, onSuccess }: InventoryLevelsSettin
 
             await InventoryAPI.setInventoryLevels(token!, {
                 productId: inventory.productId,
-                storeId: inventory.storeId,
+                storeId: inventory.store?.id as string,
                 reorderLevel: formData.reorderLevel ? Number(formData.reorderLevel) : undefined,
                 optimalLevel: formData.optimalLevel ? Number(formData.optimalLevel) : undefined,
                 storePrice: formData.storePrice ? Number(formData.storePrice) : undefined

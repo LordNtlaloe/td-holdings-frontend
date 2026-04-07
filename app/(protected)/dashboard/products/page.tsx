@@ -70,8 +70,8 @@ export default function ProductsPage() {
                 setStores(storesData);
             } else if (storesData?.data && Array.isArray(storesData.data)) {
                 setStores(storesData.data);
-            } else if (storesData?.stores && Array.isArray(storesData.stores)) {
-                setStores(storesData.stores);
+            } else if (storesData?.data && Array.isArray(storesData.data)) {
+                setStores(storesData.data);
             }
         } catch (error) {
             console.error('Error loading stores:', error);
@@ -94,7 +94,7 @@ export default function ProductsPage() {
 
             if (productsResponse && typeof productsResponse === 'object') {
                 if ('success' in productsResponse) {
-                    const apiResponse = productsResponse as ApiResponse<any>;
+                    const apiResponse = productsResponse as unknown as ApiResponse<any>;
                     if (apiResponse.success === false) {
                         throw new Error(apiResponse.error || 'Failed to load products');
                     }
